@@ -104,6 +104,43 @@ it('throws and leaves no temp file when a file cannot be written', function (str
         ? $dir->writeManifest(new Manifest(['en'], ['lang']))
         : $dir->write($doc(), false);
 
-    expect($write)->toThrow(LangExportException::class, "Could not write [{$out}/{$target}].")
+    expect($write)->toThrow(LangExportException::class, "Could not write [{$out}/{$target}]")
         ->and(glob("{$out}/*.tmp"))->toBe([]);
 })->with(['en.json', 'manifest.json']);
+
+it('chains the OS error that stopped a write and shows its reason', function () use ($doc) {
+    $out = $this->outputPath();
+    mkdir("{$out}/en.json");
+
+    try {
+        (new OutputDirectory(new Filesystem, $out))->write($doc(), false);
+    } catch (LangExportException $exception) {
+    }
+
+    expect($exception->getPrevious())->toBeInstanceOf(ErrorException::class)
+        ->and($exception->getMessage())->toBe("Could not write [{$out}/en.json]: {$exception->getPrevious()->getMessage()}");
+});
+
+it('writes through a temp file unique to each write', function () use ($doc) {
+    $out = $this->outputPath();
+    $files = new class extends Filesystem
+    {
+        /** @var list<string> */
+        public array $puts = [];
+
+        public function put($path, $contents, $lock = false)
+        {
+            $this->puts[] = $path;
+
+            return parent::put($path, $contents, $lock);
+        }
+    };
+    $dir = new OutputDirectory($files, $out);
+    $dir->write($doc(), false);
+    $dir->write($doc(), true);
+
+    expect($files->puts)->toHaveCount(2)
+        ->and($files->puts[0])->not->toBe($files->puts[1])
+        ->and($files->puts)->each->toStartWith("{$out}/en.json.")->toEndWith('.tmp')
+        ->and(glob("{$out}/*.tmp"))->toBe([]);
+});

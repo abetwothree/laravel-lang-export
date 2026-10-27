@@ -8,6 +8,7 @@ use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\ExportResult;
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
+use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Discovery\UnitFilter;
 use AbeTwoThree\LaravelLangExport\Discovery\UnitFinder;
@@ -22,13 +23,19 @@ use function array_push;
 use function array_values;
 use function basename;
 
+use Closure;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Filesystem\LockableFile;
 use Illuminate\Translation\Translator;
 
 use function in_array;
 use function sort;
 
 use const SORT_STRING;
+
+use function storage_path;
+
+use Throwable;
 
 /**
  * Runs the export pipeline from the translator's lang sources to the locale files and manifest on disk.
@@ -39,6 +46,8 @@ use const SORT_STRING;
  */
 final readonly class LangExporter
 {
+    private const string LOCK_FILE = 'framework/lang-export.lock';
+
     /**
      * Creates an exporter reading through the app's translator.
      */
@@ -59,14 +68,8 @@ final readonly class LangExporter
     public function exportAll(ExportOptions $options): ExportResult
     {
         $sources = LangSources::fromTranslator($this->translator, $options);
-        $parsedLocales = $this->parseLocales($sources, $options);
-        $output = new OutputDirectory($this->files, $options->outputPath);
-        $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
-        $locales = array_keys($parsedLocales);
-        $removed = $this->removeDropped($output, $locales);
-        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
 
-        return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
+        return $this->locked(fn (): ExportResult => $this->exportSources($sources, $options));
     }
 
     /**
@@ -90,11 +93,38 @@ final readonly class LangExporter
             return new ExportResult(skipped: true);
         }
 
+        return $this->locked(fn (): ExportResult => $this->exportUnit($sources, $options, $unit));
+    }
+
+    /**
+     * Parses every unit and writes the locale files and manifest; the caller holds the export lock.
+     *
+     * @throws LangExportException
+     */
+    private function exportSources(LangSources $sources, ExportOptions $options): ExportResult
+    {
+        $parsedLocales = $this->parseLocales($sources, $options);
+        $output = new OutputDirectory($this->files, $options->outputPath);
+        $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
+        $locales = array_keys($parsedLocales);
+        $removed = $this->removeDropped($output, $locales);
+        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
+
+        return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
+    }
+
+    /**
+     * Patches one unit into its locale file, falling back to a wider export; the caller holds the export lock.
+     *
+     * @throws LangExportException
+     */
+    private function exportUnit(LangSources $sources, ExportOptions $options, TranslationUnit $unit): ExportResult
+    {
         $output = new OutputDirectory($this->files, $options->outputPath);
         $manifest = $output->readManifest();
 
         if ($manifest === null) {
-            return $this->exportAll($options);
+            return $this->exportSources($sources, $options);
         }
 
         $document = in_array($unit->locale, $manifest->locales, true) ? $output->read($unit->locale) : null;
@@ -239,5 +269,31 @@ final readonly class LangExporter
         }
 
         return $removed;
+    }
+
+    /**
+     * Runs an export step under an exclusive lock, so concurrent runs cannot interleave their reads and writes.
+     *
+     * The lock file lives in storage, never in the output directory the frontend ships.
+     *
+     * @param  Closure(): ExportResult  $export
+     *
+     * @throws LangExportException
+     */
+    private function locked(Closure $export): ExportResult
+    {
+        $path = storage_path(self::LOCK_FILE);
+
+        try {
+            $lock = (new LockableFile($path, 'c'))->getExclusiveLock(true);
+        } catch (Throwable $exception) {
+            throw LangExportException::unwritableFile($path, $exception);
+        }
+
+        try {
+            return $export();
+        } finally {
+            $lock->close();
+        }
     }
 }

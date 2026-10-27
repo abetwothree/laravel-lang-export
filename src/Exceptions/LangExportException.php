@@ -57,10 +57,15 @@ class LangExportException extends RuntimeException
     }
 
     /**
-     * Reports an export file that could not be written.
+     * Reports an export file that could not be written, with the OS error behind it when there is one.
      */
-    public static function unwritableFile(string $path): self
+    public static function unwritableFile(string $path, ?Throwable $previous = null): self
     {
-        return new self(sprintf('Could not write [%s].', $path));
+        return new self(
+            $previous === null
+                ? sprintf('Could not write [%s].', $path)
+                : sprintf('Could not write [%s]: %s', $path, $previous->getMessage()),
+            previous: $previous,
+        );
     }
 }

@@ -6,6 +6,9 @@ namespace AbeTwoThree\LaravelLangExport\Output;
 
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+
+use function bin2hex;
+
 use ErrorException;
 use Illuminate\Filesystem\Filesystem;
 
@@ -17,6 +20,8 @@ use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
 use JsonException;
+
+use function random_bytes;
 
 /**
  * The export directory: reads and atomically writes locale files and the manifest, skipping unchanged content.
@@ -123,18 +128,21 @@ final readonly class OutputDirectory
         }
 
         $this->files->ensureDirectoryExists($this->path);
-        $temp = "{$file}.tmp";
+        // A temp name per write keeps two runs writing the same file from renaming each other's half-written temp.
+        $temp = "{$file}.".bin2hex(random_bytes(8)).'.tmp';
+        $error = null;
 
         try {
             $written = $this->files->put($temp, $contents) !== false && $this->files->move($temp, $file);
-        } catch (ErrorException) {
+        } catch (ErrorException $exception) {
+            $error = $exception;
             $written = false;
         }
 
         if (! $written) {
             $this->files->delete($temp);
 
-            throw LangExportException::unwritableFile($file);
+            throw LangExportException::unwritableFile($file, $error);
         }
 
         return true;

@@ -5,7 +5,7 @@
 | Class | Role |
 | --- | --- |
 | [`LangExportCommand`](../../src/Commands/LangExportCommand.php) | Flags to `ExportOptions`; picks `exportAll()` or `exportFile()`; maps `LangExportException` to exit 1. |
-| [`LangExporter`](../../src/LangExporter.php) | Orchestrates the run: parse, encode, write, prune, manifest. |
+| [`LangExporter`](../../src/LangExporter.php) | Orchestrates the run under an exclusive lock: parse, encode, write, prune, manifest. |
 | [`ExportOptions`](../../src/Data/ExportOptions.php) | Validates `config/lang-export.php`; flags replace config values. |
 | [`LangSources`](../../src/Discovery/LangSources.php) | Registers configured paths on the loader and snapshots lang, JSON and namespace directories. |
 | [`UnitFinder`](../../src/Discovery/UnitFinder.php) | Lists every `TranslationUnit`, or maps one file path to its unit. |

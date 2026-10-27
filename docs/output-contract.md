@@ -23,7 +23,8 @@ What the `@tolki/lang/vite-laravel` plugin and the frontend Translator rely on. 
 
 ## Writes
 
-- Atomic (temp file and rename), and skipped when the bytes are unchanged.
+- Atomic (a temp file unique to each write, then rename), and skipped when the bytes are unchanged.
+- Each run holds an exclusive lock on `storage/framework/lang-export.lock` from its first output read to its last write, so concurrent runs queue. The lock file is never deleted.
 - Every locale is encoded before any file is written.
 - A full export removes a stale locale file only when the previous manifest listed it.
 
