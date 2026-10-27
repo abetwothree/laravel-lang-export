@@ -38,6 +38,17 @@ class LangExportException extends RuntimeException
     }
 
     /**
+     * Reports a locale file whose lines cannot be encoded as JSON.
+     */
+    public static function unencodableLocale(string $locale, Throwable $previous): self
+    {
+        return new self(
+            sprintf('Could not encode the %s locale file: %s', $locale, $previous->getMessage()),
+            previous: $previous,
+        );
+    }
+
+    /**
      * Reports an export file that could not be written.
      */
     public static function unwritableFile(string $path): self

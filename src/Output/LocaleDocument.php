@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Output;
 
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 
 use function is_array;
 use function is_string;
@@ -105,6 +106,8 @@ final class LocaleDocument
 
     /**
      * Encodes the document with sorted top-level keys; the top level is always an object.
+     *
+     * @throws LangExportException
      */
     public function toJson(bool $pretty): string
     {
@@ -113,7 +116,11 @@ final class LocaleDocument
 
         $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
 
-        return json_encode((object) $lines, $pretty ? $flags | JSON_PRETTY_PRINT : $flags);
+        try {
+            return json_encode((object) $lines, $pretty ? $flags | JSON_PRETTY_PRINT : $flags);
+        } catch (JsonException $exception) {
+            throw LangExportException::unencodableLocale($this->locale, $exception);
+        }
     }
 
     /**

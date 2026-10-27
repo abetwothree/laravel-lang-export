@@ -93,6 +93,16 @@ it('fails without writing when a lang file cannot be loaded', function () {
         ->and(File::files($this->outputPath()))->toBeEmpty();
 });
 
+it('fails without writing when a line cannot be encoded', function () {
+    $dir = $this->outputPath().'-unencodable';
+    File::ensureDirectoryExists("$dir/en");
+    File::put("$dir/en/bad.php", "<?php return ['bad' => \"\\xB1\\x31\"];");
+    config()->set('lang-export.paths', [$dir]);
+    $this->artisan('lang:export')->expectsOutputToContain('Could not encode the en locale file')->assertFailed();
+    File::deleteDirectory($dir);
+    expect(File::files($this->outputPath()))->toBeEmpty();
+});
+
 it('writes byte-identical files on a second run', function () {
     $this->artisan('lang:export')->assertSuccessful();
     $first = File::get($this->outputPath().'/en.json');

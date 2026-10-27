@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 
 $group = fn (string $key, array $lines, string $locale = 'en') => new ParsedUnit(
@@ -92,4 +93,17 @@ it('reads back what it encodes', function () use ($group) {
         ->and(LocaleDocument::fromJson('en', '["list"]'))->toBeNull()
         ->and(LocaleDocument::fromJson('en', 'garbage'))->toBeNull()
         ->and(LocaleDocument::fromJson('en', '{}')?->warnings())->toBe([]);
+});
+
+it('names the locale when a line cannot be encoded', function () {
+    try {
+        (new LocaleDocument('en', ['bad' => "\xB1\x31"]))->toJson(false);
+    } catch (LangExportException $e) {
+        expect($e->getMessage())->toBe('Could not encode the en locale file: Malformed UTF-8 characters, possibly incorrectly encoded')
+            ->and($e->getPrevious())->toBeInstanceOf(JsonException::class);
+
+        return;
+    }
+
+    $this->fail('Expected a LangExportException.');
 });

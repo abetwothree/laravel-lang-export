@@ -44,6 +44,7 @@ final readonly class LangExporter
     /**
      * Writes one file per allowed locale plus the manifest, removing the files of locales the last export had.
      *
+     * Every unit is parsed and every document encoded before the first write, so a failure leaves the output untouched.
      * The output directory mirrors the latest full export, so narrowing the locales deletes the others' files.
      *
      * @throws LangExportException
@@ -54,6 +55,7 @@ final readonly class LangExporter
         $parsedLocales = $this->parseLocales($sources, $options);
         $output = new OutputDirectory($this->files, $options->outputPath);
         $locales = [];
+        $encoded = [];
         $written = [];
         $unchanged = [];
         $warnings = [];
@@ -68,8 +70,11 @@ final readonly class LangExporter
 
             array_push($warnings, ...$document->warnings());
             $locales[] = $locale;
+            $encoded[$locale] = $document->toJson($options->prettyPrint);
+        }
 
-            if ($output->write($document, $options->prettyPrint)) {
+        foreach ($encoded as $locale => $json) {
+            if ($output->writeJson($locale, $json)) {
                 $written[] = $locale;
             } else {
                 $unchanged[] = $locale;
@@ -85,7 +90,6 @@ final readonly class LangExporter
     /**
      * Parses every allowed unit, grouped by locale; a locale whose units were all filtered out keeps an empty list.
      *
-     * Parsing everything before the first write means a broken lang file aborts with the output untouched.
      * Units arrive sorted by locale, so the locales come out sorted too.
      *
      * @return ParsedLocales
