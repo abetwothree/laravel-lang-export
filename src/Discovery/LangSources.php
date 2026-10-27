@@ -18,6 +18,8 @@ use Illuminate\Translation\Translator;
 final readonly class LangSources
 {
     /**
+     * Holds the loader and its normalized directory lists; use fromTranslator() to build one.
+     *
      * @param  StringList  $groupPaths
      * @param  StringList  $jsonPaths
      * @param  NamespaceMap  $namespaces

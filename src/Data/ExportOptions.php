@@ -17,6 +17,8 @@ use InvalidArgumentException;
 final readonly class ExportOptions
 {
     /**
+     * Creates options from already validated values; fromConfig() is the config boundary.
+     *
      * @param  StringList|null  $locales
      * @param  StringList  $only
      * @param  StringList  $except

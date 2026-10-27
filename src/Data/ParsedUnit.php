@@ -12,6 +12,8 @@ namespace AbeTwoThree\LaravelLangExport\Data;
 final readonly class ParsedUnit
 {
     /**
+     * Creates a parsed unit from its kept lines and the warnings for the values it dropped.
+     *
      * @param  LangGroup  $lines
      * @param  list<string>  $warnings
      */

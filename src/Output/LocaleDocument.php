@@ -38,6 +38,8 @@ final class LocaleDocument
     private array $warnings = [];
 
     /**
+     * Creates a locale's document, empty or holding lines read back from its file.
+     *
      * @param  LocaleLines  $lines
      */
     public function __construct(

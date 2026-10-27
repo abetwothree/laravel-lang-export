@@ -16,6 +16,8 @@ final readonly class Manifest
     public const int VERSION = 1;
 
     /**
+     * Creates a manifest from the exported locales and the directories to watch.
+     *
      * @param  list<string>  $locales
      * @param  list<string>  $watch
      */
