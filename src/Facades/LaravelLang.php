@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLang\Facades;
 
-use Illuminate\Support\Facades\Facade;
 use AbeTwoThree\LaravelLang\LaravelLang as LaravelLangInstance;
+use Illuminate\Support\Facades\Facade;
 
 /**
  * @see LaravelLangInstance
