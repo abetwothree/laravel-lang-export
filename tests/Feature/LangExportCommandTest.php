@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 use function Orchestra\Testbench\workbench_path;
 
@@ -75,6 +76,18 @@ it('writes to --output', function () {
     $other = $this->outputPath().'/other';
     $this->artisan('lang:export', ['--output' => $other])->assertSuccessful();
     expect(File::exists("$other/en.json"))->toBeTrue();
+});
+
+it('resolves a relative --output against the base path', function () {
+    $relative = 'lang-export-'.Str::random(8);
+
+    try {
+        $this->artisan('lang:export', ['--output' => $relative])->assertSuccessful();
+        expect(File::exists(base_path("$relative/en.json")))->toBeTrue();
+    } finally {
+        File::deleteDirectory(base_path($relative));
+        File::deleteDirectory(getcwd()."/$relative");
+    }
 });
 
 it('treats an empty --output as not given', function () {

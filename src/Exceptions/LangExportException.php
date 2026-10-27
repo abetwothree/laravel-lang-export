@@ -20,6 +20,14 @@ class LangExportException extends RuntimeException
     }
 
     /**
+     * Reports a source path that no registered lang directory owns.
+     */
+    public static function notTranslationFile(string $path): self
+    {
+        return new self(sprintf('[%s] is not inside a registered lang directory.', $path));
+    }
+
+    /**
      * Reports a translation unit whose lang file cannot be loaded.
      */
     public static function unreadableUnit(TranslationUnit $unit, Throwable $previous): self

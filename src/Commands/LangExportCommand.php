@@ -8,10 +8,14 @@ use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\ExportResult;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\LangExporter;
+
+use function base_path;
+
 use Illuminate\Console\Command;
 
 use function is_array;
 use function is_string;
+use function preg_match;
 
 /**
  * Exports the app's translations as one JSON file per locale for `@tolki/lang`.
@@ -25,7 +29,8 @@ final class LangExportCommand extends Command
         {--locale=* : Only export these locales}
         {--only=* : Only export groups matching these patterns}
         {--except=* : Skip groups matching these patterns}
-        {--output= : Directory to write to}';
+        {--output= : Directory to write to, absolute or relative to the base path}
+        {--source= : Path of one changed translation file to re-export, absolute or relative to the base path}';
 
     /** @var string */
     protected $description = 'Export translations as one JSON file per locale';
@@ -37,20 +42,30 @@ final class LangExportCommand extends Command
           php artisan lang:export --locale=en --locale=es
           php artisan lang:export --only=auth --only='courier::*' --except='admin/*'
           php artisan lang:export --output=resources/js/lang
+          php artisan lang:export --source=lang/en/auth.php
         HELP;
 
     /**
-     * Runs a full export and reports each file it wrote, left unchanged or removed.
+     * Runs a full export, or re-exports the one `--source` file, and reports what it wrote, left unchanged or removed.
      */
     public function handle(LangExporter $exporter): int
     {
+        $source = $this->stringOption('source');
+
         try {
-            $this->report($exporter->exportAll($this->exportOptions()));
+            $options = $this->exportOptions();
+            $result = $source === null ? $exporter->exportAll($options) : $exporter->exportFile($source, $options);
         } catch (LangExportException $exception) {
             $this->error($exception->getMessage());
 
             return self::FAILURE;
         }
+
+        if ($result->skipped) {
+            $this->line("Skipped {$source}: excluded by filters");
+        }
+
+        $this->report($result);
 
         return self::SUCCESS;
     }
@@ -60,10 +75,10 @@ final class LangExportCommand extends Command
      */
     protected function exportOptions(): ExportOptions
     {
-        $output = $this->option('output');
+        $output = $this->stringOption('output');
 
         return ExportOptions::fromConfig()->with(
-            outputPath: is_string($output) && $output !== '' ? $output : null,
+            outputPath: $output === null ? null : $this->fromBasePath($output),
             locales: $this->listOption('locale'),
             only: $this->listOption('only'),
             except: $this->listOption('except'),
@@ -109,5 +124,23 @@ final class LangExportCommand extends Command
         }
 
         return $strings;
+    }
+
+    /**
+     * Reads an option as a string, or null when it is missing or empty.
+     */
+    private function stringOption(string $name): ?string
+    {
+        $value = $this->option($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * Resolves a relative path against the base path, so the command acts the same from any working directory.
+     */
+    private function fromBasePath(string $path): string
+    {
+        return preg_match('#^([/\\\\]|[A-Za-z]:[/\\\\])#', $path) === 1 ? $path : base_path($path);
     }
 }

@@ -16,13 +16,19 @@ use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
 
+use function array_diff;
+use function array_keys;
 use function array_push;
+use function array_values;
 use function basename;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Translation\Translator;
 
 use function in_array;
+use function sort;
+
+use const SORT_STRING;
 
 /**
  * Runs the export pipeline from the translator's lang sources to the locale files and manifest on disk.
@@ -44,8 +50,9 @@ final readonly class LangExporter
     /**
      * Writes one file per allowed locale plus the manifest, removing the files of locales the last export had.
      *
-     * Every unit is parsed and every document encoded before the first write, so a failure leaves the output untouched.
-     * The output directory mirrors the latest full export, so narrowing the locales deletes the others' files.
+     * Every unit is parsed and every document encoded before the first write, so a parse or encode failure leaves
+     * the output untouched. The output directory mirrors the latest full export, so narrowing the locales deletes
+     * the others' files.
      *
      * @throws LangExportException
      */
@@ -54,7 +61,103 @@ final readonly class LangExporter
         $sources = LangSources::fromTranslator($this->translator, $options);
         $parsedLocales = $this->parseLocales($sources, $options);
         $output = new OutputDirectory($this->files, $options->outputPath);
+        $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
+        $locales = array_keys($parsedLocales);
+        $removed = $this->removeDropped($output, $locales);
+        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
+
+        return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
+    }
+
+    /**
+     * Re-exports the unit one changed, added or deleted lang file belongs to, writing what a full export would.
+     *
+     * Used by a file watcher on every change. The unit is patched into its locale's existing file; a missing manifest
+     * falls back to a full export, and a missing, unlisted or unreadable locale file to a whole-locale export.
+     *
+     * @throws LangExportException
+     */
+    public function exportFile(string $path, ExportOptions $options): ExportResult
+    {
+        $sources = LangSources::fromTranslator($this->translator, $options);
+        $unit = (new UnitFinder($sources, $this->files))->forFile($path);
+
+        if ($unit === null) {
+            throw LangExportException::notTranslationFile($path);
+        }
+
+        if (! (new UnitFilter($options))->allows($unit)) {
+            return new ExportResult(skipped: true);
+        }
+
+        $output = new OutputDirectory($this->files, $options->outputPath);
+        $manifest = $output->readManifest();
+
+        if ($manifest === null) {
+            return $this->exportAll($options);
+        }
+
+        $document = in_array($unit->locale, $manifest->locales, true) ? $output->read($unit->locale) : null;
+
+        if ($document === null) {
+            return $this->exportLocale($sources, $options, $output, $manifest, $unit->locale);
+        }
+
+        $parsed = (new TranslationParser($sources))->parse($unit);
+
+        // Dropping a key can uncover a JSON line it displaced or leave the locale empty; only a full re-read knows.
+        if ($parsed->lines === []) {
+            return $this->exportLocale($sources, $options, $output, $manifest, $unit->locale);
+        }
+
+        $document->put($parsed);
+        $json = $document->toJson($options->prettyPrint);
+        $warnings = [...$parsed->warnings, ...$document->warnings()];
+
+        return $output->writeJson($unit->locale, $json)
+            ? new ExportResult(written: [$unit->locale], warnings: $warnings)
+            : new ExportResult(unchanged: [$unit->locale], warnings: $warnings);
+    }
+
+    /**
+     * Parses every allowed unit, grouped by locale; a locale whose units were all filtered out keeps an empty list.
+     *
+     * Units arrive sorted by locale, so the locales come out sorted too. A given locale limits the parse to its units.
+     *
+     * @return ParsedLocales
+     *
+     * @throws LangExportException
+     */
+    private function parseLocales(LangSources $sources, ExportOptions $options, ?string $locale = null): array
+    {
+        $filter = new UnitFilter($options);
+        $parser = new TranslationParser($sources);
         $locales = [];
+
+        foreach ((new UnitFinder($sources, $this->files))->all() as $unit) {
+            if (! $filter->allowsLocale($unit->locale) || ($locale !== null && $unit->locale !== $locale)) {
+                continue;
+            }
+
+            $locales[$unit->locale] ??= [];
+
+            if ($filter->allows($unit)) {
+                $locales[$unit->locale][] = $parser->parse($unit);
+            }
+        }
+
+        return $locales;
+    }
+
+    /**
+     * Assembles and encodes every locale's document before writing any, so an unencodable line writes nothing.
+     *
+     * @param  ParsedLocales  $parsedLocales
+     *
+     * @throws LangExportException
+     */
+    private function writeLocales(OutputDirectory $output, array $parsedLocales, bool $pretty): ExportResult
+    {
         $encoded = [];
         $written = [];
         $unchanged = [];
@@ -69,8 +172,7 @@ final readonly class LangExporter
             }
 
             array_push($warnings, ...$document->warnings());
-            $locales[] = $locale;
-            $encoded[$locale] = $document->toJson($options->prettyPrint);
+            $encoded[$locale] = $document->toJson($pretty);
         }
 
         foreach ($encoded as $locale => $json) {
@@ -81,40 +183,36 @@ final readonly class LangExporter
             }
         }
 
-        $removed = $this->removeDropped($output, $locales);
-        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
-
-        return new ExportResult($written, $unchanged, $removed, $warnings);
+        return new ExportResult($written, $unchanged, warnings: $warnings);
     }
 
     /**
-     * Parses every allowed unit, grouped by locale; a locale whose units were all filtered out keeps an empty list.
-     *
-     * Units arrive sorted by locale, so the locales come out sorted too.
-     *
-     * @return ParsedLocales
+     * Rewrites one locale's file from every unit on disk and lists it in the manifest, or drops it when none is left.
      *
      * @throws LangExportException
      */
-    private function parseLocales(LangSources $sources, ExportOptions $options): array
-    {
-        $filter = new UnitFilter($options);
-        $parser = new TranslationParser($sources);
-        $locales = [];
+    private function exportLocale(
+        LangSources $sources,
+        ExportOptions $options,
+        OutputDirectory $output,
+        Manifest $manifest,
+        string $locale,
+    ): ExportResult {
+        $parsedLocales = $this->parseLocales($sources, $options, $locale);
+        $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
+        $locales = array_values(array_diff($manifest->locales, [$locale]));
+        $removed = [];
 
-        foreach ((new UnitFinder($sources, $this->files))->all() as $unit) {
-            if (! $filter->allowsLocale($unit->locale)) {
-                continue;
-            }
-
-            $locales[$unit->locale] ??= [];
-
-            if ($filter->allows($unit)) {
-                $locales[$unit->locale][] = $parser->parse($unit);
-            }
+        if ($parsedLocales !== []) {
+            $locales[] = $locale;
+            sort($locales, SORT_STRING);
+        } elseif ($output->delete($locale)) {
+            $removed[] = $locale;
         }
 
-        return $locales;
+        $output->writeManifest(new Manifest($locales, $manifest->watch));
+
+        return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
     }
 
     /**

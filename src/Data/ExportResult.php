@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Data;
 
 /**
- * What an export wrote, left unchanged, removed and warned about, each listed by locale code.
+ * What an export wrote, left unchanged and removed, each listed by locale code, plus its warning messages.
  *
  * @phpstan-import-type StringList from ExportOptions
  */

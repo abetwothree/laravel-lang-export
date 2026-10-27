@@ -60,6 +60,14 @@ it('resolves a relative path against the base path', function () use ($finder, $
     expect($ids([$finder()->forFile('lang-relative/en/auth.php')]))->toBe(['en:auth']);
 });
 
+it('returns null for a path that climbs with ..', function (string $path) use ($finder) {
+    expect($finder()->forFile(workbench_path($path)))->toBeNull();
+})->with(['lang-app/en/../../evil.php', 'lang-app/../evil/en/x.php', 'lang-app/en/../en/auth.php']);
+
+it('ignores . segments', function () use ($finder, $ids) {
+    expect($ids([$finder()->forFile(workbench_path('./lang-app/./en/./auth.php'))]))->toBe(['en:auth']);
+});
+
 it('returns null outside every lang directory', function () use ($finder) {
     expect($finder()->forFile(__FILE__))->toBeNull();
 });

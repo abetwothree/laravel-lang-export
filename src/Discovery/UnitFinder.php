@@ -75,6 +75,15 @@ final readonly class UnitFinder
             $path = rtrim(str_replace('\\', '/', base_path()), '/')."/{$path}";
         }
 
+        $segments = explode('/', $path);
+
+        // The loader would follow a `..` out of the lang directory this prefix match vouches for.
+        if (in_array('..', $segments, true)) {
+            return null;
+        }
+
+        $path = implode('/', array_filter($segments, static fn (string $segment): bool => $segment !== '.'));
+
         foreach ($this->sources->groupPaths() as $groupPath) {
             foreach ($this->sources->namespaces() as $namespace => $hint) {
                 $unit = $this->groupUnit($path, "{$groupPath}/".self::VENDOR."/{$namespace}", $namespace);
