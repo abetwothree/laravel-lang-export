@@ -58,8 +58,8 @@ final class LangExportCommand extends Command
             return self::FAILURE;
         }
 
-        if ($result->skipped) {
-            $this->line("Skipped {$source}: excluded by filters");
+        if ($result->skipped !== null) {
+            $this->line("Skipped {$source}: {$result->skipped->value}");
         }
 
         $this->report($result);

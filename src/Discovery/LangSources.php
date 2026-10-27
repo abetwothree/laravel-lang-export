@@ -110,6 +110,16 @@ final readonly class LangSources
     }
 
     /**
+     * Returns every registered lang, JSON and namespace directory, in that order.
+     *
+     * @return StringList
+     */
+    public function directories(): array
+    {
+        return [...$this->groupPaths, ...$this->jsonPaths, ...array_values($this->namespaces)];
+    }
+
+    /**
      * Returns every existing lang directory, relative to the base path when inside it.
      *
      * Relative paths let a Vite process on the host read a manifest written inside a Sail container.
@@ -121,7 +131,7 @@ final readonly class LangSources
         $base = self::normalize(base_path()).'/';
         $directories = [];
 
-        foreach ([...$this->groupPaths, ...$this->jsonPaths, ...array_values($this->namespaces)] as $path) {
+        foreach ($this->directories() as $path) {
             if (is_dir($path)) {
                 $directories[] = str_starts_with($path, $base) ? substr($path, strlen($base)) : $path;
             }

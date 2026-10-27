@@ -87,3 +87,26 @@ it('returns null for a JSON file nested below a lang path', function () use ($fi
 it('returns null for a group file directly in a lang path', function () use ($finder) {
     expect($finder()->forFile(workbench_path('lang-app/auth.php')))->toBeNull();
 });
+
+it('tells whether a path lies inside a registered lang directory, unit or not', function (string $path, bool $inside) use ($finder) {
+    expect($finder()->isInsideLangDirectory(workbench_path($path)))->toBe($inside);
+})->with([
+    'non-PHP file in a locale directory' => ['lang-app/en/readme.txt', true],
+    'unregistered vendor namespace' => ['lang-app/vendor/ghost/en/boo.php', true],
+    'the lang directory itself' => ['lang-app', true],
+    'file in a namespace directory' => ['packages/courier/lang/es/notes.md', true],
+    'sibling sharing a name prefix' => ['lang-app-other/en/auth.php', false],
+    'file outside every lang directory' => ['app/Providers/WorkbenchServiceProvider.php', false],
+    'path that climbs out with ..' => ['lang-app/en/../../evil.php', false],
+]);
+
+it('counts a file inside a configured JSON path as inside', function () use ($finder) {
+    expect($finder()->isInsideLangDirectory(workbench_path('lang-extra/notes.md')))->toBeFalse();
+    config()->set('lang-export.json_paths', [workbench_path('lang-extra')]);
+    expect($finder()->isInsideLangDirectory(workbench_path('lang-extra/notes.md')))->toBeTrue();
+});
+
+it('resolves a relative path before checking it is inside', function () use ($finder) {
+    config()->set('lang-export.paths', [base_path('lang-relative')]);
+    expect($finder()->isInsideLangDirectory('lang-relative/en/notes.txt'))->toBeTrue();
+});

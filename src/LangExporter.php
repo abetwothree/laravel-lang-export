@@ -8,6 +8,7 @@ use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\ExportResult;
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
+use AbeTwoThree\LaravelLangExport\Data\SkipReason;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Discovery\UnitFilter;
@@ -77,21 +78,28 @@ final readonly class LangExporter
      * Re-exports the unit one changed, added or deleted lang file belongs to, writing what a full export would.
      *
      * Used by a file watcher on every change. The unit is patched into its locale's existing file; a missing manifest
-     * falls back to a full export, and a missing, unlisted or unreadable locale file to a whole-locale export.
+     * falls back to a full export, and a missing, unlisted or unreadable locale file to a whole-locale export. A file
+     * inside a lang directory that is no unit is skipped; one outside every lang directory fails.
      *
      * @throws LangExportException
      */
     public function exportFile(string $path, ExportOptions $options): ExportResult
     {
         $sources = LangSources::fromTranslator($this->translator, $options);
-        $unit = (new UnitFinder($sources, $this->files))->forFile($path);
+        $finder = new UnitFinder($sources, $this->files);
+        $unit = $finder->forFile($path);
+
+        // A watcher reports every file in a lang directory, so a readme or editor swap file there is not an error.
+        if ($unit === null && $finder->isInsideLangDirectory($path)) {
+            return new ExportResult(skipped: SkipReason::NotTranslationFile);
+        }
 
         if ($unit === null) {
             throw LangExportException::notTranslationFile($path);
         }
 
         if (! (new UnitFilter($options))->allows($unit)) {
-            return new ExportResult(skipped: true);
+            return new ExportResult(skipped: SkipReason::Filtered);
         }
 
         return $this->locked(fn (): ExportResult => $this->exportUnit($sources, $options, $unit));

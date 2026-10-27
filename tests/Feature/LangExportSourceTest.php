@@ -79,6 +79,13 @@ it('skips a file the filters exclude', function () {
         ->expectsOutputToContain("Skipped {$this->live}/en/live.php: excluded by filters")->assertSuccessful();
     expect(File::get($this->outputPath().'/en.json'))->toBe($before);
 });
+it('skips a file inside a lang directory that is not a translation file', function (string $file) use ($snapshot) {
+    $before = $snapshot();
+    $this->artisan('lang:export', ['--source' => "{$this->live}/{$file}"])
+        ->expectsOutputToContain("Skipped {$this->live}/{$file}: not a translation file")
+        ->assertSuccessful();
+    expect($snapshot())->toBe($before);
+})->with(['en/readme.txt', 'en/.live.php.swp', 'vendor/ghost/en/boo.php', 'en']);
 it('refuses a file outside every lang directory without loading it', function () {
     $this->artisan('lang:export', ['--source' => __FILE__])
         ->expectsOutputToContain('is not inside a registered lang directory')->assertFailed();

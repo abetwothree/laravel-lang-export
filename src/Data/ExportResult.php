@@ -12,7 +12,7 @@ namespace AbeTwoThree\LaravelLangExport\Data;
 final readonly class ExportResult
 {
     /**
-     * Creates a result; `skipped` marks an export the filters excluded entirely.
+     * Creates a result; `skipped` tells why a source re-export wrote nothing.
      *
      * @param  StringList  $written
      * @param  StringList  $unchanged
@@ -24,6 +24,6 @@ final readonly class ExportResult
         public array $unchanged = [],
         public array $removed = [],
         public array $warnings = [],
-        public bool $skipped = false,
+        public ?SkipReason $skipped = null,
     ) {}
 }

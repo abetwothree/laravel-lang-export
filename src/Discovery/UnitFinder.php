@@ -70,15 +70,11 @@ final readonly class UnitFinder
      */
     public function forFile(string $path): ?TranslationUnit
     {
-        $path = rtrim(str_replace('\\', '/', BasePath::resolve($path)), '/');
-        $segments = explode('/', $path);
+        $path = $this->canonical($path);
 
-        // The loader would follow a `..` out of the lang directory this prefix match vouches for.
-        if (in_array('..', $segments, true)) {
+        if ($path === null) {
             return null;
         }
-
-        $path = implode('/', array_filter($segments, static fn (string $segment): bool => $segment !== '.'));
 
         foreach ($this->sources->groupPaths() as $groupPath) {
             foreach ($this->sources->namespaces() as $namespace => $hint) {
@@ -112,6 +108,41 @@ final readonly class UnitFinder
         }
 
         return null;
+    }
+
+    /**
+     * Tells whether a path is, or lies below, a registered lang, JSON or namespace directory, unit or not.
+     */
+    public function isInsideLangDirectory(string $path): bool
+    {
+        $path = $this->canonical($path);
+
+        if ($path === null) {
+            return false;
+        }
+
+        foreach ($this->sources->directories() as $directory) {
+            if ($path === $directory || str_starts_with($path, "{$directory}/")) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Makes a path absolute with forward slashes and no `.` segments, or returns null when it has a `..` segment.
+     */
+    private function canonical(string $path): ?string
+    {
+        $segments = explode('/', rtrim(str_replace('\\', '/', BasePath::resolve($path)), '/'));
+
+        // The loader would follow a `..` out of the lang directory a prefix match vouches for.
+        if (in_array('..', $segments, true)) {
+            return null;
+        }
+
+        return implode('/', array_filter($segments, static fn (string $segment): bool => $segment !== '.'));
     }
 
     /**
