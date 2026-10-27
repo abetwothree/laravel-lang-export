@@ -20,6 +20,7 @@ use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
 use function array_diff;
 use function array_keys;
 use function array_push;
+use function array_unique;
 use function array_values;
 use function basename;
 
@@ -61,7 +62,7 @@ final readonly class LangExporter
      *
      * Every unit is parsed and every document encoded before the first write, so a parse or encode failure leaves
      * the output untouched. The output directory mirrors the latest full export, so narrowing the locales deletes
-     * the others' files.
+     * the others' files; a locale filter that matches no lang files fails instead of emptying it.
      *
      * @throws LangExportException
      */
@@ -104,13 +105,24 @@ final readonly class LangExporter
     private function exportSources(LangSources $sources, ExportOptions $options): ExportResult
     {
         $parsedLocales = $this->parseLocales($sources, $options);
+
+        // An export of no locales would delete every exported file over what is most likely a typo.
+        if ($options->locales !== null && $parsedLocales === []) {
+            throw LangExportException::noLangFiles($options->locales);
+        }
+
         $output = new OutputDirectory($this->files, $options->outputPath);
         $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
         $locales = array_keys($parsedLocales);
         $removed = $this->removeDropped($output, $locales);
         $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
+        $warnings = [];
 
-        return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
+        foreach (array_unique(array_diff($options->locales ?? [], $locales)) as $locale) {
+            $warnings[] = "{$locale}: no lang files found";
+        }
+
+        return new ExportResult($result->written, $result->unchanged, $removed, [...$warnings, ...$result->warnings]);
     }
 
     /**

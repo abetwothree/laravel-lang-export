@@ -98,3 +98,9 @@ it('resolves relative config paths against the base path', function () {
         ->and($options->jsonPaths)->toBe([base_path('lang-b'), 'C:\\abs\\b'])
         ->and($options->namespaces)->toBe(['blog' => base_path('modules/blog/lang'), 'shop' => 'D:/shop/lang']);
 });
+
+it('treats an empty locales list as no locale filter', function () {
+    config()->set('lang-export.locales', []);
+
+    expect(ExportOptions::fromConfig()->locales)->toBeNull();
+});

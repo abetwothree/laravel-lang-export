@@ -8,6 +8,17 @@ use Illuminate\Support\Str;
 use function Orchestra\Testbench\workbench_path;
 
 $read = fn (string $file) => json_decode(File::get(test()->outputPath()."/$file"), true);
+$snapshot = function (): array {
+    $files = [];
+
+    foreach (File::files(test()->outputPath()) as $file) {
+        $files[$file->getFilename()] = $file->getContents();
+    }
+
+    ksort($files);
+
+    return $files;
+};
 
 it('exports every locale and a manifest', function () use ($read) {
     $this->artisan('lang:export')->expectsOutputToContain('Wrote en.json')->assertSuccessful();
@@ -35,6 +46,38 @@ it('prints warnings for skipped lines', function () {
 it('limits locales with --locale', function () {
     $this->artisan('lang:export', ['--locale' => ['es']])->assertSuccessful();
     expect(File::files($this->outputPath()))->toHaveCount(2); // es.json, manifest.json
+});
+
+it('fails without touching the output when no requested locale has lang files', function (?array $config, array $flags) use ($snapshot) {
+    $this->artisan('lang:export')->assertSuccessful();
+    $before = $snapshot();
+    config()->set('lang-export.locales', $config);
+
+    $this->artisan('lang:export', $flags)
+        ->expectsOutputToContain('No lang files found for the requested locales [EN, xx].')
+        ->assertFailed();
+
+    expect($snapshot())->toBe($before);
+})->with([
+    'flag' => [null, ['--locale' => ['EN', 'xx']]],
+    'config' => [['EN', 'xx'], []],
+]);
+
+it('warns about a requested locale without lang files and exports the others', function () use ($read) {
+    $this->artisan('lang:export', ['--locale' => ['es', 'xx']])
+        ->expectsOutputToContain('xx: no lang files found')
+        ->doesntExpectOutputToContain('es: no lang files found')
+        ->assertSuccessful();
+
+    expect($read('manifest.json')['locales'])->toBe(['es']);
+});
+
+it('exports every locale when config locales is an empty list', function () use ($read) {
+    config()->set('lang-export.locales', []);
+
+    $this->artisan('lang:export')->assertSuccessful();
+
+    expect($read('manifest.json')['locales'])->toBe(['de', 'en', 'es']);
 });
 
 it('filters groups with --only and --except', function () use ($read) {

@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLangExport\Exceptions;
 
+use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use Illuminate\Translation\FileLoader;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Every expected export failure; the command prints its message and exits 1.
+ *
+ * @phpstan-import-type StringList from ExportOptions
+ */
 class LangExportException extends RuntimeException
 {
     /**
@@ -25,6 +31,16 @@ class LangExportException extends RuntimeException
     public static function notTranslationFile(string $path): self
     {
         return new self(sprintf('[%s] is not inside a registered lang directory.', $path));
+    }
+
+    /**
+     * Reports a locale filter that matches no lang files.
+     *
+     * @param  StringList  $locales
+     */
+    public static function noLangFiles(array $locales): self
+    {
+        return new self(sprintf('No lang files found for the requested locales [%s].', implode(', ', $locales)));
     }
 
     /**

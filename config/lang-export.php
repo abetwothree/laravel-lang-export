@@ -6,7 +6,7 @@ return [
     // Directory the per-locale JSON files are written to. Relative paths here and below resolve against base_path().
     'output_path' => resource_path('js/lang'),
 
-    // Locales to export; null exports every locale found.
+    // Locales to export; null or [] exports every locale found.
     'locales' => null,
 
     // Only export groups matching these Str::is() patterns, e.g. 'auth', 'admin/*', 'courier::*'.

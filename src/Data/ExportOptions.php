@@ -49,7 +49,7 @@ final readonly class ExportOptions
 
         return new self(
             outputPath: BasePath::resolve(Config::string('lang-export.output_path')),
-            locales: $locales === null ? null : self::stringList($locales, 'locales'),
+            locales: $locales === null || $locales === [] ? null : self::stringList($locales, 'locales'),
             only: self::stringList(Config::array('lang-export.only'), 'only'),
             except: self::stringList(Config::array('lang-export.except'), 'except'),
             json: Config::boolean('lang-export.json'),
