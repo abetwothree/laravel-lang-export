@@ -8,14 +8,11 @@ use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\ExportResult;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\LangExporter;
-
-use function base_path;
-
+use AbeTwoThree\LaravelLangExport\Support\BasePath;
 use Illuminate\Console\Command;
 
 use function is_array;
 use function is_string;
-use function preg_match;
 
 /**
  * Exports the app's translations as one JSON file per locale for `@tolki/lang`.
@@ -78,7 +75,7 @@ final class LangExportCommand extends Command
         $output = $this->stringOption('output');
 
         return ExportOptions::fromConfig()->with(
-            outputPath: $output === null ? null : $this->fromBasePath($output),
+            outputPath: $output === null ? null : BasePath::resolve($output),
             locales: $this->listOption('locale'),
             only: $this->listOption('only'),
             except: $this->listOption('except'),
@@ -134,13 +131,5 @@ final class LangExportCommand extends Command
         $value = $this->option($name);
 
         return is_string($value) && $value !== '' ? $value : null;
-    }
-
-    /**
-     * Resolves a relative path against the base path, so the command acts the same from any working directory.
-     */
-    private function fromBasePath(string $path): string
-    {
-        return preg_match('#^([/\\\\]|[A-Za-z]:[/\\\\])#', $path) === 1 ? $path : base_path($path);
     }
 }

@@ -99,7 +99,7 @@ it('canonicalizes a directory registered through ..', function () use ($sources)
 });
 
 it('collapses . and .. lexically', function (string $path, string $canonical) use ($sources) {
-    config()->set('lang-export.paths', [$path]);
+    app('translator')->getLoader()->addPath($path);
     expect($sources()->groupPaths())->toContain($canonical);
 })->with([
     ['/a/b/../c', '/a/c'],

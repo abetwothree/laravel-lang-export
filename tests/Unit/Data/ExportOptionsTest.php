@@ -84,3 +84,17 @@ it('rejects a keyed locales map', function () {
 
     ExportOptions::fromConfig();
 })->throws(InvalidArgumentException::class);
+
+it('resolves relative config paths against the base path', function () {
+    config()->set('lang-export.output_path', 'resources/js/lang');
+    config()->set('lang-export.paths', ['lang-a', '/abs/a']);
+    config()->set('lang-export.json_paths', ['lang-b', 'C:\\abs\\b']);
+    config()->set('lang-export.namespaces', ['blog' => 'modules/blog/lang', 'shop' => 'D:/shop/lang']);
+
+    $options = ExportOptions::fromConfig();
+
+    expect($options->outputPath)->toBe(base_path('resources/js/lang'))
+        ->and($options->paths)->toBe([base_path('lang-a'), '/abs/a'])
+        ->and($options->jsonPaths)->toBe([base_path('lang-b'), 'C:\\abs\\b'])
+        ->and($options->namespaces)->toBe(['blog' => base_path('modules/blog/lang'), 'shop' => 'D:/shop/lang']);
+});

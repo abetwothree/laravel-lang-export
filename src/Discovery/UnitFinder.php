@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Discovery;
 
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LaravelLangExport\Support\BasePath;
 use Illuminate\Filesystem\Filesystem;
 
 /**
@@ -69,12 +70,7 @@ final readonly class UnitFinder
      */
     public function forFile(string $path): ?TranslationUnit
     {
-        $path = rtrim(str_replace('\\', '/', $path), '/');
-
-        if (preg_match('#^(/|[A-Za-z]:/)#', $path) !== 1) {
-            $path = rtrim(str_replace('\\', '/', base_path()), '/')."/{$path}";
-        }
-
+        $path = rtrim(str_replace('\\', '/', BasePath::resolve($path)), '/');
         $segments = explode('/', $path);
 
         // The loader would follow a `..` out of the lang directory this prefix match vouches for.

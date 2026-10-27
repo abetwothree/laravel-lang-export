@@ -90,6 +90,36 @@ it('resolves a relative --output against the base path', function () {
     }
 });
 
+it('resolves a relative config output_path against the base path', function () {
+    $relative = 'lang-export-'.Str::random(8);
+    config()->set('lang-export.output_path', $relative);
+
+    try {
+        $this->artisan('lang:export')->assertSuccessful();
+        expect(File::exists(base_path("$relative/en.json")))->toBeTrue();
+    } finally {
+        File::deleteDirectory(base_path($relative));
+        File::deleteDirectory(getcwd()."/$relative");
+    }
+});
+
+it('reads a lang path configured relative to the base path, in a full export and with --source', function () use ($read) {
+    $relative = 'lang-rel-'.Str::random(8);
+    File::ensureDirectoryExists(base_path("$relative/en"));
+    File::put(base_path("$relative/en/rel.php"), "<?php return ['a' => 'A'];");
+    config()->set('lang-export.paths', [$relative]);
+
+    try {
+        $this->artisan('lang:export')->assertSuccessful();
+        $full = $read('en.json')['rel'] ?? null;
+        File::put(base_path("$relative/en/rel.php"), "<?php return ['a' => 'B'];");
+        $this->artisan('lang:export', ['--source' => base_path("$relative/en/rel.php")])->assertSuccessful();
+        expect($full)->toBe(['a' => 'A'])->and($read('en.json')['rel'])->toBe(['a' => 'B']);
+    } finally {
+        File::deleteDirectory(base_path($relative));
+    }
+});
+
 it('treats an empty --output as not given', function () {
     $this->artisan('lang:export', ['--output' => ''])->assertSuccessful();
     expect(File::exists($this->outputPath().'/en.json'))->toBeTrue();

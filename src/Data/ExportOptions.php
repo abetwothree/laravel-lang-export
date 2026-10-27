@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLangExport\Data;
 
+use AbeTwoThree\LaravelLangExport\Support\BasePath;
 use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
 
@@ -38,7 +39,7 @@ final readonly class ExportOptions
     /**
      * Builds the options from the `lang-export` config, rejecting malformed values.
      *
-     * This is the config boundary; downstream classes trust the result.
+     * This is the config boundary; downstream classes trust the result. Relative paths resolve against the base path.
      *
      * @throws InvalidArgumentException
      */
@@ -47,14 +48,17 @@ final readonly class ExportOptions
         $locales = Config::get('lang-export.locales');
 
         return new self(
-            outputPath: Config::string('lang-export.output_path'),
+            outputPath: BasePath::resolve(Config::string('lang-export.output_path')),
             locales: $locales === null ? null : self::stringList($locales, 'locales'),
             only: self::stringList(Config::array('lang-export.only'), 'only'),
             except: self::stringList(Config::array('lang-export.except'), 'except'),
             json: Config::boolean('lang-export.json'),
-            paths: self::stringList(Config::array('lang-export.paths'), 'paths'),
-            jsonPaths: self::stringList(Config::array('lang-export.json_paths'), 'json_paths'),
-            namespaces: self::namespaceMap(Config::array('lang-export.namespaces')),
+            paths: array_map(BasePath::resolve(...), self::stringList(Config::array('lang-export.paths'), 'paths')),
+            jsonPaths: array_map(
+                BasePath::resolve(...),
+                self::stringList(Config::array('lang-export.json_paths'), 'json_paths'),
+            ),
+            namespaces: array_map(BasePath::resolve(...), self::namespaceMap(Config::array('lang-export.namespaces'))),
             prettyPrint: Config::boolean('lang-export.pretty_print'),
         );
     }
