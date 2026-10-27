@@ -18,6 +18,17 @@ afterEach(function () {
     File::deleteDirectory("{$this->live}-outside");
 });
 $read = fn (string $file) => json_decode(File::get(test()->outputPath()."/$file"), true);
+$snapshot = function (): array {
+    $files = [];
+
+    foreach (File::files(test()->outputPath()) as $file) {
+        $files[$file->getFilename()] = $file->getContents();
+    }
+
+    ksort($files);
+
+    return $files;
+};
 $fresh = function (): string {
     $fresh = test()->outputPath().'/fresh';
     test()->artisan('lang:export', ['--output' => $fresh])->assertSuccessful();
@@ -151,4 +162,29 @@ it('runs a full export when there is no manifest', function () use ($read) {
     $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php"])->assertSuccessful();
     expect(File::exists($this->outputPath().'/es.json'))->toBeTrue()
         ->and($read('manifest.json')['locales'])->toBe(['de', 'en', 'es', 'zz']);
+});
+it('re-exports a file of a namespace registered through ..', function () use ($read) {
+    $package = "{$this->live}-outside/pkg";
+    File::ensureDirectoryExists("$package/src");
+    File::ensureDirectoryExists("$package/lang/en");
+    File::put("$package/lang/en/x.php", "<?php return ['a' => 'A'];");
+    app('translator')->addNamespace('hop', "$package/src/../lang");
+    $this->artisan('lang:export')->assertSuccessful();
+    File::put("$package/lang/en/x.php", "<?php return ['a' => 'B'];");
+    $this->artisan('lang:export', ['--source' => "$package/lang/en/x.php"])->assertSuccessful();
+    expect($read('en.json')['hop::x'])->toBe(['a' => 'B'])
+        ->and($read('manifest.json')['watch'])->toContain(basename($this->live).'-outside/pkg/lang');
+});
+it('leaves a stray locale file the manifest does not list', function () use ($read) {
+    File::put($this->outputPath().'/qq.json', '{"mine": "x"}');
+    $this->artisan('lang:export', ['--source' => "{$this->live}/qq.json"])->assertSuccessful();
+    expect(File::get($this->outputPath().'/qq.json'))->toBe('{"mine": "x"}')
+        ->and($read('manifest.json')['locales'])->not->toContain('qq');
+});
+it('fails without touching output when a changed JSON file is malformed', function () use ($snapshot) {
+    $before = $snapshot();
+    File::put("{$this->live}/zz.json", '{');
+    $this->artisan('lang:export', ['--source' => "{$this->live}/zz.json"])
+        ->expectsOutputToContain('zz.json')->assertFailed();
+    expect($snapshot())->toBe($before);
 });

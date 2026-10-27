@@ -189,6 +189,8 @@ final readonly class LangExporter
     /**
      * Rewrites one locale's file from every unit on disk and lists it in the manifest, or drops it when none is left.
      *
+     * Only a file the manifest lists is deleted; the exporter never removes a file it did not write.
+     *
      * @throws LangExportException
      */
     private function exportLocale(
@@ -206,7 +208,7 @@ final readonly class LangExporter
         if ($parsedLocales !== []) {
             $locales[] = $locale;
             sort($locales, SORT_STRING);
-        } elseif ($output->delete($locale)) {
+        } elseif (in_array($locale, $manifest->locales, true) && $output->delete($locale)) {
             $removed[] = $locale;
         }
 

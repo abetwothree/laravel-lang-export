@@ -134,11 +134,29 @@ final readonly class LangSources
     }
 
     /**
-     * Converts a path to forward slashes with no trailing slash.
+     * Converts a path to forward slashes with `.` and `..` collapsed and no trailing slash.
+     *
+     * Packages register `__DIR__.'/../lang'`. Collapsing lexically, unlike realpath(), still maps deleted files.
      */
     private static function normalize(string $path): string
     {
-        return rtrim(str_replace('\\', '/', $path), '/');
+        $path = str_replace('\\', '/', $path);
+        $root = preg_match('#^(?:[A-Za-z]:)?/*#', $path, $match) === 1 ? $match[0] : '';
+        $segments = [];
+
+        foreach (explode('/', substr($path, strlen($root))) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment !== '..' || ($segments === [] && $root === '') || end($segments) === '..') {
+                $segments[] = $segment;
+            } elseif ($segments !== []) {
+                array_pop($segments);
+            }
+        }
+
+        return rtrim($root.implode('/', $segments), '/');
     }
 
     /**

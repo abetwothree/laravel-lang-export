@@ -90,6 +90,28 @@ it('lists existing watch directories, relative inside the base path', function (
     expect($watch)->toBe($sorted);
 });
 
+it('canonicalizes a directory registered through ..', function () use ($sources) {
+    app('translator')->addNamespace('hop', workbench_path('packages/courier/../../lang-extra/'));
+    $canonical = normalizePath(workbench_path('lang-extra'));
+    expect($sources()->namespaces()['hop'])->toBe($canonical)
+        ->and($sources()->watchDirectories())->toContain($canonical)
+        ->and(implode("\n", $sources()->watchDirectories()))->not->toContain('..');
+});
+
+it('collapses . and .. lexically', function (string $path, string $canonical) use ($sources) {
+    config()->set('lang-export.paths', [$path]);
+    expect($sources()->groupPaths())->toContain($canonical);
+})->with([
+    ['/a/b/../c', '/a/c'],
+    ['/a/./b/', '/a/b'],
+    ['/a//b', '/a/b'],
+    ['/../a', '/a'],
+    ['C:\\x\\..\\y', 'C:/y'],
+    ['C:/../y', 'C:/y'],
+    ['//server/share/../z', '//server/z'],
+    ['rel/../../w', '../w'],
+]);
+
 it('rejects a loader that does not extend FileLoader', function () use ($sources) {
     app()->forgetInstance('translator');
     app()->instance('translation.loader', new ArrayLoader);
