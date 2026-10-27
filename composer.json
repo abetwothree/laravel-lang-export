@@ -1,10 +1,13 @@
 {
-    "name": "abetwothree/laravel-lang",
-    "description": "Convert your Laravel translation files files into JSON files for use in Vue, React, & Svelte",
+    "name": "abetwothree/laravel-lang-export",
+    "description": "Export your Laravel translation files as JSON for Vue, React, & Svelte with @tolki/lang",
     "keywords": [
-        "AbeTwoThree",
+        "abetwothree",
         "laravel",
-        "laravel-lang"
+        "laravel-lang-export",
+        "translations",
+        "i18n",
+        "tolki"
     ],
     "homepage": "https://github.com/abetwothree/laravel-lang",
     "license": "MIT",
@@ -18,13 +21,13 @@
     "require": {
         "php": "^8.4",
         "spatie/laravel-package-tools": "^1.16",
-        "illuminate/contracts": "^11.0||^12.0||^13.0"
+        "illuminate/contracts": "^13.0||^12.0"
     },
     "require-dev": {
         "laravel/pint": "^1.14",
         "nunomaduro/collision": "^8.8",
         "larastan/larastan": "^3.0",
-        "orchestra/testbench": "^11.0.0||^10.0.0||^9.0.0",
+        "orchestra/testbench": "^11.0||^10.0",
         "pestphp/pest": "^4.0",
         "pestphp/pest-plugin-arch": "^4.0",
         "pestphp/pest-plugin-laravel": "^4.0",
@@ -34,14 +37,12 @@
     },
     "autoload": {
         "psr-4": {
-            "AbeTwoThree\\LaravelLang\\": "src/",
-            "AbeTwoThree\\LaravelLang\\Database\\Factories\\": "database/factories/"
+            "AbeTwoThree\\LaravelLangExport\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "AbeTwoThree\\LaravelLang\\Tests\\": "tests/",
-            "Workbench\\App\\": "workbench/app/"
+            "AbeTwoThree\\LaravelLangExport\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -55,9 +56,7 @@
         "lint": [
             "@php vendor/bin/pint --ansi",
             "@php vendor/bin/phpstan analyse --verbose --ansi --memory-limit=-1"
-        ],
-        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
-        "build": "@php vendor/bin/testbench workbench:build --ansi"
+        ]
     },
     "config": {
         "sort-packages": true,
@@ -69,11 +68,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "AbeTwoThree\\LaravelLang\\LaravelLangServiceProvider"
-            ],
-            "aliases": {
-                "LaravelLang": "AbeTwoThree\\LaravelLang\\Facades\\LaravelLang"
-            }
+                "AbeTwoThree\\LaravelLangExport\\LaravelLangExportServiceProvider"
+            ]
         }
     },
     "minimum-stability": "dev",

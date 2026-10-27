@@ -2,6 +2,6 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLang\Tests\TestCase;
+use AbeTwoThree\LaravelLangExport\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);
