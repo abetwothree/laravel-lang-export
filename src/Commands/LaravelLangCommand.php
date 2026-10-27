@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AbeTwoThree\LaravelLang\Commands;
 
 use Illuminate\Console\Command;

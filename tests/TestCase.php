@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AbeTwoThree\LaravelLang\Tests;
 
+use AbeTwoThree\LaravelLang\LaravelLangServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use AbeTwoThree\LaravelLang\LaravelLangServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -17,13 +19,6 @@ class TestCase extends Orchestra
         );
     }
 
-    protected function getPackageProviders($app)
-    {
-        return [
-            LaravelLangServiceProvider::class,
-        ];
-    }
-
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
@@ -33,5 +28,12 @@ class TestCase extends Orchestra
             (include $migration->getRealPath())->up();
          }
          */
+    }
+
+    protected function getPackageProviders($app)
+    {
+        return [
+            LaravelLangServiceProvider::class,
+        ];
     }
 }

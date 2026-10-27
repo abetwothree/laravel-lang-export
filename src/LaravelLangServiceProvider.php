@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AbeTwoThree\LaravelLang;
 
+use AbeTwoThree\LaravelLang\Commands\LaravelLangCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use AbeTwoThree\LaravelLang\Commands\LaravelLangCommand;
 
 class LaravelLangServiceProvider extends PackageServiceProvider
 {
