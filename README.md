@@ -1,78 +1,61 @@
-# Convert your Laravel translation files files into JSON files for use in Vue, React, & Svelte
+# Export your Laravel translations as JSON for Vue, React & Svelte
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/abetwothree/laravel-lang.svg?style=flat-square)](https://packagist.org/packages/abetwothree/laravel-lang)
-[![GitHub Tests Action Status](https://github.com/spatie/package-laravel-lang-laravel/actions/workflows/run-tests.yml/badge.svg)](https://github.com/abetwothree/laravel-lang/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://github.com/spatie/package-laravel-lang-laravel/actions/workflows/fix-php-code-style-issues.yml/badge.svg)](https://github.com/abetwothree/laravel-lang/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/abetwothree/laravel-lang.svg?style=flat-square)](https://packagist.org/packages/abetwothree/laravel-lang)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/abetwothree/laravel-lang-export.svg?style=flat-square)](https://packagist.org/packages/abetwothree/laravel-lang-export)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/abetwothree/laravel-lang/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/abetwothree/laravel-lang/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/abetwothree/laravel-lang/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/abetwothree/laravel-lang/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/abetwothree/laravel-lang-export.svg?style=flat-square)](https://packagist.org/packages/abetwothree/laravel-lang-export)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://spatie.be/github-ad-image/laravel-lang.jpg" width="419px" />](https://spatie.be/github-ad-click/laravel-lang)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+This package exports your Laravel translations as one JSON file per locale, ready for the `Translator` in [`@tolki/lang`](https://github.com/abetwothree/tolki/tree/master/packages/lang). It loads every file through Laravel's own translation loader, so the output matches what `__()` resolves.
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
-composer require abetwothree/laravel-lang
+composer require abetwothree/laravel-lang-export
 ```
 
-You can publish and run the migrations with:
+Optionally publish the config file:
 
 ```bash
-php artisan vendor:publish --tag="laravel-lang-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
-
-```bash
-php artisan vendor:publish --tag="laravel-lang-config"
-```
-
-This is the contents of the published config file:
-
-```php
-return [
-];
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="laravel-lang-views"
+php artisan vendor:publish --tag="lang-export-config"
 ```
 
 ## Usage
 
-```php
-$laravelLang = new AbeTwoThree\LaravelLang();
-echo $laravelLang->echoPhrase('Hello, AbeTwoThree!');
+```bash
+php artisan lang:export
 ```
+
+This writes `resources/js/lang/en.json` (one file per locale) and a `manifest.json`:
+
+```json
+{
+    "Welcome": "Welcome",
+    "auth": {
+        "failed": "These credentials do not match our records."
+    },
+    "courier::mail": {
+        "sent": "Your message was sent."
+    }
+}
+```
+
+## Key capabilities
+
+- Package namespaces and `lang/vendor` overrides, exactly as Laravel resolves them
+- Modular apps through extra lang paths, JSON paths and namespaces
+- Allow and deny patterns for groups, plus locale filtering
+- Single-file re-export with `--source` for file watchers
+- Laravel's framework lines (validation, auth, pagination, passwords) included
+
+## Documentation
+
+See the [Tolki localization docs](https://tolki.abe.dev/localization/) for usage in depth.
 
 ## Testing
 
 ```bash
 composer test
 ```
-
-## Changelog
-
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
 
 ## Credits
 
