@@ -16,3 +16,4 @@ The package asks the app's `Translator` for its `FileLoader` and calls `load()` 
 - Only strings survive, plus arrays in PHP groups. Other values are dropped with a warning.
 - The floor is Laravel 12, where `FileLoader::paths()` first ships.
 - A loader that does not extend `FileLoader` fails with `LangExportException::unsupportedLoader()`.
+- Units are discovered by scanning files on disk, so groups that exist only in a DB-backed `FileLoader` subclass are not exported.

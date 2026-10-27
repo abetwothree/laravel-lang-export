@@ -79,7 +79,7 @@ final readonly class LangExporter
      *
      * Used by a file watcher on every change. The unit is patched into its locale's existing file; a missing manifest
      * falls back to a full export, and a missing, unlisted or unreadable locale file to a whole-locale export. A file
-     * inside a lang directory that is no unit is skipped; one outside every lang directory fails.
+     * inside a lang directory that is not a unit is skipped; one outside every lang directory fails.
      *
      * @throws LangExportException
      */

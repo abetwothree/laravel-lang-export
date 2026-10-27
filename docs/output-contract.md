@@ -39,3 +39,10 @@ What the `@tolki/lang/vite-laravel` plugin and the frontend Translator rely on. 
 - A source file excluded by filters prints `Skipped {source}: excluded by filters`.
 - A source path inside a registered lang, JSON or namespace directory that is not a translation unit (a readme, an editor swap file, an unregistered `lang/vendor` namespace) prints `Skipped {source}: not a translation file`. A path outside every registered directory fails.
 - Exit `0` on success, including a skip. Exit `1` on any `LangExportException`, printed with `error()`. Warnings print on stdout. No prompts.
+
+## Caller obligations
+
+- Serialize or debounce `--source` calls. The command's lock queues concurrent runs, but each one still runs.
+- Pass `--source` the same `--locale`, `--only` and `--except` as the full export. The manifest records no filters, so a mismatch patches in units the full export left out.
+- Prefer `--source` paths relative to the base path. Absolute paths compare as strings, so a host path never matches one inside a Sail container, and a Windows drive letter must match its registered case.
+- Expect `Skipped {source}: not a translation file` (exit `0`) for other files in watched directories. A path outside every registered directory, or with a `..` segment, exits `1`.
