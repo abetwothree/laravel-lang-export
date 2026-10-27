@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLang\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use AbeTwoThree\LaravelLang\LaravelLang as LaravelLangInstance;
 
 /**
- * @see \AbeTwoThree\LaravelLang\LaravelLang
+ * @see LaravelLangInstance
  */
 class LaravelLang extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \AbeTwoThree\LaravelLang\LaravelLang::class;
+        return LaravelLangInstance::class;
     }
 }
