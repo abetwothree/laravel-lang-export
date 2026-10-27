@@ -57,6 +57,20 @@ it('keeps a group over a JSON line with the same key and warns', function () use
     }
 });
 
+it('keeps a JSON line when a group with the same key is empty, without a warning', function () use ($group, $json) {
+    foreach ([true, false] as $jsonFirst) {
+        $doc = new LocaleDocument('de');
+        $units = [$json(['pagination' => 'Line'], 'de'), $group('pagination', [], 'de')];
+
+        foreach ($jsonFirst ? $units : array_reverse($units) as $unit) {
+            $doc->put($unit);
+        }
+
+        expect($doc->toJson(false))->toBe('{"pagination":"Line"}')
+            ->and($doc->warnings())->toBe([]);
+    }
+});
+
 it('removes a group whose lines are empty', function () use ($group) {
     $doc = new LocaleDocument('en', ['auth' => ['failed' => 'F']]);
     $doc->put($group('auth', []));

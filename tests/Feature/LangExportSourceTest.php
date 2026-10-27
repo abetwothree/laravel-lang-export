@@ -114,6 +114,15 @@ it('restores a JSON line once the group that displaced it is deleted', function 
     expect(File::get($this->outputPath().'/en.json'))->toBe(File::get($fresh().'/en.json'))
         ->and(json_decode(File::get($this->outputPath().'/en.json'), true)['live'])->toBe('Live line');
 });
+it('keeps a JSON line beside an empty same-named group file, matching a fresh export', function () use ($read, $fresh) {
+    File::put("{$this->live}/en/hello.php", '<?php return [];');
+    File::put("{$this->live}/en.json", '{"hello": "Hello line"}');
+    $this->artisan('lang:export')->assertSuccessful();
+    File::put("{$this->live}/en.json", '{"hello": "Hello again"}');
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en.json"])->assertSuccessful();
+    expect(File::get($this->outputPath().'/en.json'))->toBe(File::get($fresh().'/en.json'))
+        ->and($read('en.json')['hello'])->toBe('Hello again');
+});
 it('drops a locale whose last file was deleted', function () use ($read, $fresh) {
     File::delete("{$this->live}/zz.json");
     $this->artisan('lang:export', ['--source' => "{$this->live}/zz.json"])

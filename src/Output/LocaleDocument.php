@@ -124,18 +124,21 @@ final class LocaleDocument
     }
 
     /**
-     * Sets or removes a group, replacing a same-keyed JSON line.
+     * Sets a group, replacing a same-keyed JSON line, or removes the group when it is empty.
      */
     private function putGroup(string $key, ParsedUnit $parsed): void
     {
-        if (is_string($this->lines[$key] ?? null)) {
-            $this->warnings[] = $this->collisionWarning($key);
-        }
-
         if ($parsed->lines === []) {
-            unset($this->lines[$key]);
+            // `__()` still resolves a same-named JSON line when the group file is empty, so only a group is removed.
+            if (is_array($this->lines[$key] ?? null)) {
+                unset($this->lines[$key]);
+            }
 
             return;
+        }
+
+        if (is_string($this->lines[$key] ?? null)) {
+            $this->warnings[] = $this->collisionWarning($key);
         }
 
         $this->lines[$key] = $parsed->lines;
