@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Output;
 
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use ErrorException;
 use Illuminate\Filesystem\Filesystem;
 
 use function json_decode;
@@ -114,8 +116,18 @@ final readonly class OutputDirectory
 
         $this->files->ensureDirectoryExists($this->path);
         $temp = "{$file}.tmp";
-        $this->files->put($temp, $contents);
-        $this->files->move($temp, $file);
+
+        try {
+            $written = $this->files->put($temp, $contents) !== false && $this->files->move($temp, $file);
+        } catch (ErrorException) {
+            $written = false;
+        }
+
+        if (! $written) {
+            $this->files->delete($temp);
+
+            throw LangExportException::unwritableFile($file);
+        }
 
         return true;
     }

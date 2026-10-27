@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use Illuminate\Filesystem\Filesystem;
@@ -94,3 +95,15 @@ it('deletes a locale file', function () use ($doc) {
         ->and(File::exists("{$out}/en.json"))->toBeFalse()
         ->and($dir->delete('en'))->toBeFalse();
 });
+
+it('throws and leaves no temp file when a file cannot be written', function (string $target) use ($doc) {
+    $out = $this->outputPath();
+    mkdir("{$out}/{$target}");
+    $dir = new OutputDirectory(new Filesystem, $out);
+    $write = fn () => $target === 'manifest.json'
+        ? $dir->writeManifest(new Manifest(['en'], ['lang']))
+        : $dir->write($doc(), false);
+
+    expect($write)->toThrow(LangExportException::class, "Could not write [{$out}/{$target}].")
+        ->and(glob("{$out}/*.tmp"))->toBe([]);
+})->with(['en.json', 'manifest.json']);
