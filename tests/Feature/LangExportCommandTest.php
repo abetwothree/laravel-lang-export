@@ -163,6 +163,25 @@ it('reads a lang path configured relative to the base path, in a full export and
     }
 });
 
+it('refuses an output path that is a registered lang directory', function (string $key, bool $source) {
+    $live = base_path('lang-live-'.Str::random(8));
+    File::ensureDirectoryExists("$live/en");
+    File::put("$live/en/live.php", "<?php return ['a' => 'A'];");
+    File::put("$live/en.json", '{"Hi": "Hi"}');
+    config()->set("lang-export.{$key}", $key === 'namespaces' ? ['live' => $live] : [$live]);
+    $listing = fn () => collect(File::allFiles($live))->mapWithKeys(fn ($file) => [$file->getRelativePathname() => $file->getContents()])->sort()->all();
+    $before = $listing();
+
+    try {
+        $this->artisan('lang:export', ['--output' => "$live/", ...($source ? ['--source' => "$live/en/live.php"] : [])])
+            ->expectsOutputToContain("The output path [$live/] is a registered lang directory")
+            ->assertFailed();
+        expect($listing())->toBe($before);
+    } finally {
+        File::deleteDirectory($live);
+    }
+})->with(['paths', 'json_paths', 'namespaces'])->with(['full export' => false, '--source' => true]);
+
 it('treats an empty --output as not given', function () {
     $this->artisan('lang:export', ['--output' => ''])->assertSuccessful();
     expect(File::exists($this->outputPath().'/en.json'))->toBeTrue();

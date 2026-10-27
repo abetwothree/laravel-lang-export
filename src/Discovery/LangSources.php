@@ -120,6 +120,14 @@ final readonly class LangSources
     }
 
     /**
+     * Tells whether a path names a registered lang, JSON or namespace directory, whatever its slashes.
+     */
+    public function hasDirectory(string $path): bool
+    {
+        return in_array(self::normalize($path), $this->directories(), true);
+    }
+
+    /**
      * Returns every existing lang directory, relative to the base path when inside it.
      *
      * Relative paths let a Vite process on the host read a manifest written inside a Sail container.

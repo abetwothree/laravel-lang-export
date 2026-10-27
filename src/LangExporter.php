@@ -69,7 +69,7 @@ final readonly class LangExporter
      */
     public function exportAll(ExportOptions $options): ExportResult
     {
-        $sources = LangSources::fromTranslator($this->translator, $options);
+        $sources = $this->sources($options);
 
         return $this->locked(fn (): ExportResult => $this->exportSources($sources, $options));
     }
@@ -85,7 +85,7 @@ final readonly class LangExporter
      */
     public function exportFile(string $path, ExportOptions $options): ExportResult
     {
-        $sources = LangSources::fromTranslator($this->translator, $options);
+        $sources = $this->sources($options);
         $finder = new UnitFinder($sources, $this->files);
         $unit = $finder->forFile($path);
 
@@ -103,6 +103,22 @@ final readonly class LangExporter
         }
 
         return $this->locked(fn (): ExportResult => $this->exportUnit($sources, $options, $unit));
+    }
+
+    /**
+     * Snapshots the lang sources, refusing an output path that is one of their directories.
+     *
+     * @throws LangExportException
+     */
+    private function sources(ExportOptions $options): LangSources
+    {
+        $sources = LangSources::fromTranslator($this->translator, $options);
+
+        if ($sources->hasDirectory($options->outputPath)) {
+            throw LangExportException::outputIsLangDirectory($options->outputPath);
+        }
+
+        return $sources;
     }
 
     /**

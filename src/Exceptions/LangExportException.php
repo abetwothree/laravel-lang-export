@@ -26,6 +26,14 @@ class LangExportException extends RuntimeException
     }
 
     /**
+     * Reports an output path that is a lang directory, where the export would overwrite `{locale}.json` lang files.
+     */
+    public static function outputIsLangDirectory(string $path): self
+    {
+        return new self(sprintf('The output path [%s] is a registered lang directory.', $path));
+    }
+
+    /**
      * Reports a source path that no registered lang directory owns.
      */
     public static function notTranslationFile(string $path): self
