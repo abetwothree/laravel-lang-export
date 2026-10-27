@@ -1,0 +1,116 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Support\Facades\File;
+
+use function Orchestra\Testbench\workbench_path;
+
+$read = fn (string $file) => json_decode(File::get(test()->outputPath()."/$file"), true);
+
+it('exports every locale and a manifest', function () use ($read) {
+    $this->artisan('lang:export')->expectsOutputToContain('Wrote en.json')->assertSuccessful();
+    expect(array_keys($read('en.json')))->toBe([
+        'Read more', 'Welcome', 'admin/users', 'auth', 'blog::posts', 'courier::mail',
+        'mixed', 'pagination', 'passwords', 'validation',
+    ])
+        ->and($read('en.json')['courier::mail'])->toBe(['sent' => 'App override sent.', 'queued' => 'Package queued.'])
+        ->and($read('es.json'))->toBe([
+            'Welcome' => 'Bienvenido',
+            'auth' => ['failed' => 'Credenciales incorrectas.'],
+            'courier::mail' => ['sent' => 'Enviado.'],
+        ])
+        ->and($read('manifest.json')['locales'])->toBe(['de', 'en', 'es'])
+        ->and($read('manifest.json')['watch'])->toContain(normalizePath(workbench_path('lang-app')));
+});
+
+it('prints warnings for skipped lines', function () {
+    $this->artisan('lang:export')
+        ->expectsOutputToContain('en: mixed.count skipped (int)')
+        ->expectsOutputToContain('de: JSON line "pagination" skipped, a group has the same key')
+        ->assertSuccessful();
+});
+
+it('limits locales with --locale', function () {
+    $this->artisan('lang:export', ['--locale' => ['es']])->assertSuccessful();
+    expect(File::files($this->outputPath()))->toHaveCount(2); // es.json, manifest.json
+});
+
+it('filters groups with --only and --except', function () use ($read) {
+    $this->artisan('lang:export', ['--only' => ['auth', 'courier::*'], '--except' => ['courier::*']])->assertSuccessful();
+    expect(array_keys($read('en.json')))->toBe(['Read more', 'Welcome', 'auth']);
+});
+
+it('writes an empty object for a locale whose units are all filtered out', function () use ($read) {
+    config()->set('lang-export.json', false);
+    $this->artisan('lang:export', ['--only' => ['auth']])->assertSuccessful();
+    expect(File::get($this->outputPath().'/de.json'))->toBe("{}\n")
+        ->and($read('manifest.json')['locales'])->toBe(['de', 'en', 'es']);
+});
+
+it('removes locale files a previous export wrote that are no longer exported', function () {
+    $this->artisan('lang:export')->assertSuccessful();
+    File::put($this->outputPath().'/keep.txt', 'mine');
+    $this->artisan('lang:export', ['--locale' => ['es']])->expectsOutputToContain('Removed en.json')->assertSuccessful();
+    expect(File::exists($this->outputPath().'/en.json'))->toBeFalse()
+        ->and(File::exists($this->outputPath().'/de.json'))->toBeFalse()
+        ->and(File::exists($this->outputPath().'/keep.txt'))->toBeTrue();
+});
+
+it('only removes locale files that exist inside the output directory', function () {
+    $outside = $this->outputPath().'-outside.json';
+    File::put($outside, '{}');
+    File::put($this->outputPath().'/manifest.json', json_encode([
+        'version' => 1,
+        'locales' => ['../'.basename($this->outputPath()).'-outside', 'zz'],
+        'watch' => [],
+    ]));
+    $this->artisan('lang:export')->doesntExpectOutputToContain('Removed')->assertSuccessful();
+    $kept = File::exists($outside);
+    File::delete($outside);
+    expect($kept)->toBeTrue();
+});
+
+it('writes to --output', function () {
+    $other = $this->outputPath().'/other';
+    $this->artisan('lang:export', ['--output' => $other])->assertSuccessful();
+    expect(File::exists("$other/en.json"))->toBeTrue();
+});
+
+it('treats an empty --output as not given', function () {
+    $this->artisan('lang:export', ['--output' => ''])->assertSuccessful();
+    expect(File::exists($this->outputPath().'/en.json'))->toBeTrue();
+});
+
+it('fails without writing when a lang file cannot be loaded', function () {
+    $dir = $this->outputPath().'-broken';
+    File::ensureDirectoryExists("$dir/en");
+    File::put("$dir/en/broken.php", "<?php return ['a' => ;");
+    config()->set('lang-export.paths', [$dir]);
+    $this->artisan('lang:export')->expectsOutputToContain('broken.php')->assertFailed();
+    File::deleteDirectory($dir);
+    expect(File::exists($this->outputPath().'/en.json'))->toBeFalse()
+        ->and(File::files($this->outputPath()))->toBeEmpty();
+});
+
+it('writes byte-identical files on a second run', function () {
+    $this->artisan('lang:export')->assertSuccessful();
+    $first = File::get($this->outputPath().'/en.json');
+    $this->artisan('lang:export')->expectsOutputToContain('Unchanged en.json')->assertSuccessful();
+    expect(File::get($this->outputPath().'/en.json'))->toBe($first);
+});
+
+it('exports configured extra paths', function () use ($read) {
+    config()->set('lang-export.paths', [workbench_path('lang-extra')]);
+    $this->artisan('lang:export')->assertSuccessful();
+    expect($read('fr.json'))->toBe(['extra' => ['hello' => 'Bonjour']]);
+});
+
+it('publishes the workbench sample output', function () {
+    File::deleteDirectory(workbench_path('resources/js/lang'));
+    config()->set('lang-export.pretty_print', true);
+    $this->artisan('lang:export', ['--output' => workbench_path('resources/js/lang')])->assertSuccessful();
+    expect(File::exists(workbench_path('resources/js/lang/en.json')))->toBeTrue()
+        ->and(File::exists(workbench_path('resources/js/lang/manifest.json')))->toBeTrue()
+        ->and(File::get(workbench_path('resources/js/lang/es.json')))->toStartWith("{\n    \"Welcome\"");
+});
