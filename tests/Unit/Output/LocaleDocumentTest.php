@@ -121,3 +121,16 @@ it('names the locale when a line cannot be encoded', function () {
 
     $this->fail('Expected a LangExportException.');
 });
+
+it('rejects a read-back file holding values other than strings and objects', function (string $json) {
+    expect(LocaleDocument::fromJson('en', $json))->toBeNull();
+})->with([
+    'number line' => ['{"Hi": 5}'],
+    'null leaf' => ['{"auth": {"failed": null}}'],
+    'deep bool leaf' => ['{"auth": {"a": {"b": true}}}'],
+]);
+
+it('reads back nested groups of strings, empty ones included', function () {
+    expect(LocaleDocument::fromJson('en', '{"Hi": "Hi", "auth": {"a": {"b": "B"}, "c": []}}')?->toJson(false))
+        ->toBe('{"Hi":"Hi","auth":{"a":{"b":"B"},"c":[]}}');
+});

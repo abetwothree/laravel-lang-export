@@ -204,3 +204,12 @@ it('names an empty lang file an editor just created', function () use ($snapshot
         ->assertFailed();
     expect($snapshot())->toBe($before);
 });
+
+it('re-exports a whole locale whose file holds a non-string value', function () use ($fresh) {
+    $file = $this->outputPath().'/en.json';
+    $edited = json_decode(File::get($file), true);
+    $edited['auth']['failed'] = 5;
+    File::put($file, json_encode($edited));
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php"])->assertSuccessful();
+    expect(File::get($file))->toBe(File::get($fresh().'/en.json'));
+});

@@ -32,7 +32,9 @@ final class LocaleDocument
     ) {}
 
     /**
-     * Reads a document back from its JSON, or returns null when the JSON is invalid or not an object.
+     * Reads a document back from its JSON, or returns null unless it is an object of strings and nested objects.
+     *
+     * A hand-edited file can hold any JSON, and a patch would otherwise carry its other values into the export.
      */
     public static function fromJson(string $locale, string $json): ?self
     {
@@ -46,7 +48,10 @@ final class LocaleDocument
             return null;
         }
 
-        /** @var LocaleLines $lines */
+        if (! is_array($lines) || ! self::isLangGroup($lines)) {
+            return null;
+        }
+
         return new self($locale, $lines);
     }
 
@@ -107,6 +112,24 @@ final class LocaleDocument
         } catch (JsonException $exception) {
             throw LangExportException::unencodableLocale($this->locale, $exception);
         }
+    }
+
+    /**
+     * Tells whether every value of an array is a string or such an array, at any depth.
+     *
+     * @param  array<array-key, mixed>  $values
+     *
+     * @phpstan-assert-if-true LocaleLines $values
+     */
+    private static function isLangGroup(array $values): bool
+    {
+        foreach ($values as $value) {
+            if (! is_string($value) && ! (is_array($value) && self::isLangGroup($value))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
