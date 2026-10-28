@@ -17,6 +17,8 @@ use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
+use AbeTwoThree\LaravelLangExport\Support\ExportFingerprint;
+use AbeTwoThree\LaravelLangExport\Support\PackageVersion;
 use AbeTwoThree\LaravelLangExport\Support\Path;
 use Closure;
 use Illuminate\Filesystem\Filesystem;
@@ -128,7 +130,7 @@ final readonly class LangExporter
         $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
         $locales = array_keys($parsedLocales);
         $removed = $this->removeDropped($output, $locales);
-        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
+        $output->writeManifest(new Manifest($locales, $sources->watchDirectories(), $this->fingerprint($options, $sources)));
         $warnings = [];
 
         foreach (array_unique(array_diff($options->locales ?? [], $locales)) as $locale) {
@@ -148,7 +150,8 @@ final readonly class LangExporter
         $output = new OutputDirectory($this->files, $options->outputPath);
         $manifest = $output->readManifest();
 
-        if ($manifest === null) {
+        // Another version, other options or other lang directories would make a patch differ from a full export.
+        if ($manifest === null || $manifest->fingerprint !== $this->fingerprint($options, $sources)) {
             return $this->exportSources($sources, $options);
         }
 
@@ -277,7 +280,7 @@ final readonly class LangExporter
             $removed[] = $locale;
         }
 
-        $output->writeManifest(new Manifest($locales, $manifest->watch));
+        $output->writeManifest(new Manifest($locales, $manifest->watch, $manifest->fingerprint));
 
         return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
     }
@@ -304,6 +307,14 @@ final readonly class LangExporter
         }
 
         return $removed;
+    }
+
+    /**
+     * Fingerprints this run's options and lang sources with the installed package version.
+     */
+    private function fingerprint(ExportOptions $options, LangSources $sources): string
+    {
+        return ExportFingerprint::compute($options, $sources, PackageVersion::current());
     }
 
     /**

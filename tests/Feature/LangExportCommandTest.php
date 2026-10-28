@@ -109,6 +109,7 @@ it('only removes locale files that exist inside the output directory', function 
         'version' => 1,
         'locales' => ['../'.basename($this->outputPath()).'-outside', 'zz'],
         'watch' => [],
+        'fingerprint' => 'x',
     ]));
     $this->artisan('lang:export')->doesntExpectOutputToContain('Removed')->assertSuccessful();
     expect(File::exists($outside))->toBeTrue();

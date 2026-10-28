@@ -213,3 +213,49 @@ it('re-exports a whole locale whose file holds a non-string value', function () 
     $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php"])->assertSuccessful();
     expect(File::get($file))->toBe(File::get($fresh().'/en.json'));
 });
+
+it('patches when the options match the last export, flags included', function () use ($read) {
+    $this->artisan('lang:export', ['--locale' => ['en']])->assertSuccessful();
+    File::put("{$this->live}/en/other.php", "<?php return ['a' => ;");
+    File::put("{$this->live}/en/live.php", "<?php return ['a' => 'L'];");
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php", '--locale' => ['en']])->assertSuccessful();
+    expect($read('en.json')['live'])->toBe(['a' => 'L']);
+});
+
+it('runs a full export when the options differ from the last export', function () use ($read) {
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php", '--locale' => ['en']])
+        ->expectsOutputToContain('Removed zz.json')->assertSuccessful();
+    expect($read('manifest.json')['locales'])->toBe(['en']);
+});
+
+it('re-encodes every locale when pretty_print changes', function () {
+    config()->set('lang-export.pretty_print', true);
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php"])->assertSuccessful();
+    expect(File::get($this->outputPath().'/zz.json'))->toStartWith("{\n    ");
+});
+
+it('skips a file of a locale outside --locale', function () use ($snapshot) {
+    $before = $snapshot();
+    $this->artisan('lang:export', ['--source' => "{$this->live}/zz.json", '--locale' => ['en']])
+        ->expectsOutputToContain("Skipped {$this->live}/zz.json: excluded by filters")->assertSuccessful();
+    expect($snapshot())->toBe($before);
+});
+
+it('patches the file under --output', function () {
+    $alt = $this->outputPath().'/alt';
+    $this->artisan('lang:export', ['--output' => $alt])->assertSuccessful();
+    $before = File::get($this->outputPath().'/en.json');
+    File::put("{$this->live}/en/live.php", "<?php return ['a' => 'O'];");
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php", '--output' => $alt])->assertSuccessful();
+    expect(json_decode(File::get("{$alt}/en.json"), true)['live'])->toBe(['a' => 'O'])
+        ->and(File::get($this->outputPath().'/en.json'))->toBe($before);
+});
+
+it('runs a full export when a lang namespace was registered after the last export', function () use ($read) {
+    $package = "{$this->live}-outside/late";
+    File::ensureDirectoryExists("$package/en");
+    File::put("$package/en/x.php", "<?php return ['a' => 'A'];");
+    app('translator')->addNamespace('late', $package);
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/live.php"])->assertSuccessful();
+    expect($read('en.json'))->toHaveKey('late::x');
+});

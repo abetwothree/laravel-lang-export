@@ -51,7 +51,7 @@ it('leaves no temp file behind', function () use ($doc) {
     $out = $this->outputPath();
     $dir = new OutputDirectory(new Filesystem, $out);
     $dir->write($doc(), false);
-    $dir->writeManifest(new Manifest(['en'], ['lang']));
+    $dir->writeManifest(new Manifest(['en'], ['lang'], 'fp'));
 
     expect(glob("{$out}/*.tmp"))->toBe([]);
 });
@@ -77,10 +77,10 @@ it('round trips the manifest', function () {
     $dir = new OutputDirectory(new Filesystem, $out);
 
     expect($dir->readManifest())->toBeNull()
-        ->and($dir->writeManifest(new Manifest(['en'], ['lang'])))->toBeTrue()
-        ->and(File::get("{$out}/manifest.json"))->toBe('{"version":1,"locales":["en"],"watch":["lang"]}'."\n")
-        ->and($dir->readManifest())->toEqual(new Manifest(['en'], ['lang']))
-        ->and($dir->writeManifest(new Manifest(['en'], ['lang'])))->toBeFalse();
+        ->and($dir->writeManifest(new Manifest(['en'], ['lang'], 'fp')))->toBeTrue()
+        ->and(File::get("{$out}/manifest.json"))->toBe('{"version":1,"locales":["en"],"watch":["lang"],"fingerprint":"fp"}'."\n")
+        ->and($dir->readManifest())->toEqual(new Manifest(['en'], ['lang'], 'fp'))
+        ->and($dir->writeManifest(new Manifest(['en'], ['lang'], 'fp')))->toBeFalse();
 
     File::put("{$out}/manifest.json", '{"version":2,"locales":[],"watch":[]}');
     expect($dir->readManifest())->toBeNull();
@@ -101,7 +101,7 @@ it('throws and leaves no temp file when a file cannot be written', function (str
     mkdir("{$out}/{$target}");
     $dir = new OutputDirectory(new Filesystem, $out);
     $write = fn () => $target === 'manifest.json'
-        ? $dir->writeManifest(new Manifest(['en'], ['lang']))
+        ? $dir->writeManifest(new Manifest(['en'], ['lang'], 'fp'))
         : $dir->write($doc(), false);
 
     expect($write)->toThrow(LangExportException::class, "Could not write [{$out}/{$target}]")

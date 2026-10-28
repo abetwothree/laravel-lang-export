@@ -17,7 +17,7 @@ The exported `{locale}.json`, holding every unit of that locale. App groups sit 
 _Avoid_: language file, bundle
 
 **Manifest**:
-The `manifest.json` beside the Locale files. It lists the exported locales and the directories a watcher should observe.
+The `manifest.json` beside the Locale files. It lists the exported locales and the directories a watcher should observe, with a fingerprint of the package version, options and lang sources that shaped them.
 
 **Lang path**:
 A directory Laravel reads PHP translation groups and `{locale}.json` files from: the framework's and the app's `lang/`, plus configured `paths`. A package's directory is a Namespace hint, not a Lang path.
