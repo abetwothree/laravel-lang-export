@@ -7,6 +7,16 @@
 
 This package exports your Laravel translations as one JSON file per locale, ready for the `Translator` in [`@tolki/lang`](https://github.com/abetwothree/tolki/tree/master/packages/lang). It loads every file through Laravel's own translation loader, so the output matches what `__()` resolves.
 
+## Works with `@tolki/lang`
+
+This package is the backend half of a pair. [`@tolki/lang`](https://github.com/abetwothree/tolki/tree/master/packages/lang), from [Tolki](https://github.com/abetwothree/tolki), is the frontend half: a JavaScript port of Laravel's translator that does not read lang files itself. This package writes the per-locale lines it takes.
+
+```bash
+npm install @tolki/lang
+```
+
+The [Tolki localization docs](https://tolki.abe.dev/localization/) cover setting up the frontend side.
+
 ## Installation
 
 ```bash
