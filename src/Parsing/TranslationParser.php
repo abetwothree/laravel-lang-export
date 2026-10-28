@@ -8,6 +8,7 @@ use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use Illuminate\Filesystem\Filesystem;
 use Throwable;
 
 /**
@@ -20,7 +21,10 @@ final readonly class TranslationParser
     /**
      * Creates a parser reading from the given lang sources.
      */
-    public function __construct(private LangSources $sources) {}
+    public function __construct(
+        private LangSources $sources,
+        private Filesystem $files,
+    ) {}
 
     /**
      * Loads a unit, keeping strings and arrays and warning about every other value.
@@ -32,7 +36,11 @@ final readonly class TranslationParser
         try {
             $loaded = $this->sources->loader()->load($unit->locale, $unit->group, $unit->namespace);
         } catch (Throwable $previous) {
-            throw LangExportException::unreadableUnit($unit, $previous);
+            $file = $this->nonArrayFile($unit);
+
+            throw $file === null
+                ? LangExportException::unreadableUnit($unit, $previous)
+                : LangExportException::langFileNotArray($unit, $file, $previous);
         }
 
         $warnings = [];
@@ -75,5 +83,25 @@ final readonly class TranslationParser
         }
 
         return $kept;
+    }
+
+    /**
+     * Returns the first existing group file of a unit that does not return an array, or null when there is none.
+     *
+     * FileLoader's array_replace_recursive() raises the TypeError, so its file and line name the framework.
+     */
+    private function nonArrayFile(TranslationUnit $unit): ?string
+    {
+        foreach ($this->sources->groupFiles($unit) as $file) {
+            try {
+                if ($this->files->isFile($file) && ! is_array($this->files->getRequire($file))) {
+                    return $file;
+                }
+            } catch (Throwable) {
+                // A file that fails to load is the cause the original error already names.
+            }
+        }
+
+        return null;
     }
 }

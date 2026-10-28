@@ -87,6 +87,17 @@ class LangExportException extends RuntimeException
     }
 
     /**
+     * Reports a lang file that does not return an array, such as an empty file an editor just created.
+     */
+    public static function langFileNotArray(TranslationUnit $unit, string $file, Throwable $previous): self
+    {
+        return new self(
+            sprintf('Could not load %s %s (%s): the file must return an array.', $unit->locale, $unit->key(), $file),
+            previous: $previous,
+        );
+    }
+
+    /**
      * Reports a locale file whose lines cannot be encoded as JSON.
      */
     public static function unencodableLocale(string $locale, Throwable $previous): self

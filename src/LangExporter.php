@@ -158,7 +158,7 @@ final readonly class LangExporter
             return $this->exportLocale($sources, $options, $output, $manifest, $unit->locale);
         }
 
-        $parsed = (new TranslationParser($sources))->parse($unit);
+        $parsed = (new TranslationParser($sources, $this->files))->parse($unit);
 
         // Dropping a key can uncover a JSON line it displaced or leave the locale empty; only a full re-read knows.
         if ($parsed->lines === []) {
@@ -186,7 +186,7 @@ final readonly class LangExporter
     private function parseLocales(LangSources $sources, ExportOptions $options, ?string $locale = null): array
     {
         $filter = new UnitFilter($options);
-        $parser = new TranslationParser($sources);
+        $parser = new TranslationParser($sources, $this->files);
         $locales = [];
 
         foreach ((new UnitFinder($sources, $this->files))->all() as $unit) {

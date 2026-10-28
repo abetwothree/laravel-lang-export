@@ -195,3 +195,12 @@ it('fails without touching output when a changed JSON file is malformed', functi
         ->expectsOutputToContain('zz.json')->assertFailed();
     expect($snapshot())->toBe($before);
 });
+
+it('names an empty lang file an editor just created', function () use ($snapshot) {
+    $before = $snapshot();
+    File::put("{$this->live}/en/new.php", '');
+    $this->artisan('lang:export', ['--source' => "{$this->live}/en/new.php"])
+        ->expectsOutputToContain('('.normalizePath("{$this->live}/en/new.php").'): the file must return an array.')
+        ->assertFailed();
+    expect($snapshot())->toBe($before);
+});

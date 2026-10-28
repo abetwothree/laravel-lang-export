@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Discovery;
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
+use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Support\Path;
 use Illuminate\Translation\FileLoader;
@@ -152,6 +153,39 @@ final readonly class LangSources
         sort($directories);
 
         return $directories;
+    }
+
+    /**
+     * Returns the PHP files the loader merges for a group unit, in load order, whether or not they exist.
+     *
+     * Mirrors FileLoader::load(): an app group reads every lang path, a package group its hint and then each lang
+     * path's `vendor/{namespace}` override. A JSON unit or an unregistered namespace has none.
+     *
+     * @return StringList
+     */
+    public function groupFiles(TranslationUnit $unit): array
+    {
+        $file = "{$unit->locale}/{$unit->group}.php";
+
+        if ($unit->isJson()) {
+            return [];
+        }
+
+        if ($unit->namespace === TranslationUnit::WILDCARD) {
+            return array_map(static fn (string $path): string => "{$path}/{$file}", $this->groupPaths);
+        }
+
+        if (! array_key_exists($unit->namespace, $this->namespaces)) {
+            return [];
+        }
+
+        return [
+            "{$this->namespaces[$unit->namespace]}/{$file}",
+            ...array_map(
+                static fn (string $path): string => "{$path}/vendor/{$unit->namespace}/{$file}",
+                $this->groupPaths,
+            ),
+        ];
     }
 
     /**
