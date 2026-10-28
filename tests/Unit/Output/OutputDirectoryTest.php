@@ -144,3 +144,17 @@ it('writes through a temp file unique to each write', function () use ($doc) {
         ->and($files->puts)->each->toStartWith("{$out}/en.json.")->toEndWith('.tmp')
         ->and(glob("{$out}/*.tmp"))->toBe([]);
 });
+
+it('removes orphaned temp files and nothing else', function () {
+    $out = $this->outputPath();
+    foreach (['en.json.0123456789abcdef.tmp', 'manifest.json.fedcba9876543210.tmp', 'en.json', 'notes.tmp', 'en.json.xyz.tmp'] as $name) {
+        File::put("{$out}/{$name}", '{}');
+    }
+    (new OutputDirectory(new Filesystem, $out))->removeTempFiles();
+    expect(array_map(fn ($f) => $f->getFilename(), File::files($out)))->toBe(['en.json', 'en.json.xyz.tmp', 'notes.tmp']);
+});
+
+it('ignores a missing output directory when removing temp files', function () {
+    (new OutputDirectory(new Filesystem, $this->outputPath().'/none'))->removeTempFiles();
+    expect(File::exists($this->outputPath().'/none'))->toBeFalse();
+});

@@ -109,6 +109,14 @@ class LangExportException extends RuntimeException
     }
 
     /**
+     * Reports an export lock that another run held past the wait timeout.
+     */
+    public static function lockTimeout(string $path, float $seconds): self
+    {
+        return new self(sprintf('Timed out after %s seconds waiting for the export lock [%s].', $seconds, $path));
+    }
+
+    /**
      * Reports an export file that could not be written, with the OS error behind it when there is one.
      */
     public static function unwritableFile(string $path, ?Throwable $previous = null): self

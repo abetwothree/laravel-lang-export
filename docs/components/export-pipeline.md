@@ -12,7 +12,8 @@
 | [`UnitFilter`](../../src/Discovery/UnitFilter.php) | Applies the locale, `json`, `only` and `except` rules. |
 | [`TranslationParser`](../../src/Parsing/TranslationParser.php) | Loads a unit via `FileLoader`; drops non-string leaves with warnings. |
 | [`LocaleDocument`](../../src/Output/LocaleDocument.php) | Assembles a locale's lines, resolves key collisions, encodes JSON. |
-| [`OutputDirectory`](../../src/Output/OutputDirectory.php) | Atomic, change-aware reads and writes of locale files and the manifest. |
+| [`OutputDirectory`](../../src/Output/OutputDirectory.php) | Atomic, change-aware reads and writes of locale files and the manifest; sweeps orphaned temp files. |
+| [`ExportLock`](../../src/Support/ExportLock.php) | Exclusive run lock with a 30-second wait; unheld where the filesystem cannot lock. |
 | [`Manifest`](../../src/Data/Manifest.php) | Locale list, watch directories and export fingerprint. |
 | [`ExportFingerprint`](../../src/Support/ExportFingerprint.php) | Hashes the package version, output-shaping options and lang sources; a mismatch turns `--source` into a full export. |
 | [`PackageVersion`](../../src/Support/PackageVersion.php) | Installed package version, folded into the export fingerprint. |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\LangExporter;
+use AbeTwoThree\LaravelLangExport\Tests\Support\NoLockStream;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -96,4 +97,21 @@ it('fails without writing when the lock file cannot be created', function () {
         ->assertFailed();
 
     expect(File::files($this->outputPath()))->toBeEmpty();
+});
+
+it('sweeps the temp files a crashed run left behind', function () {
+    File::put($this->outputPath().'/en.json.0123456789abcdef.tmp', '{');
+    $this->artisan('lang:export')->assertSuccessful();
+    expect(glob($this->outputPath().'/*.tmp'))->toBe([]);
+});
+
+it('exports with a warning, and keeps temp files, when the filesystem cannot lock', function () {
+    NoLockStream::register();
+    app()->useStoragePath('nolock://storage');
+    File::put($this->outputPath().'/en.json.0123456789abcdef.tmp', '{');
+    $this->artisan('lang:export')
+        ->expectsOutputToContain('Exported without a lock: the filesystem holding ['.storage_path('framework/lang-export.lock').'] does not support file locking.')
+        ->assertSuccessful();
+    expect(File::exists($this->outputPath().'/en.json'))->toBeTrue()
+        ->and(File::exists($this->outputPath().'/en.json.0123456789abcdef.tmp'))->toBeTrue();
 });

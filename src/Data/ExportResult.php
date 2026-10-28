@@ -26,4 +26,12 @@ final readonly class ExportResult
         public array $warnings = [],
         public ?SkipReason $skipped = null,
     ) {}
+
+    /**
+     * Returns a copy with one more warning.
+     */
+    public function withWarning(string $warning): self
+    {
+        return new self($this->written, $this->unchanged, $this->removed, [...$this->warnings, $warning], $this->skipped);
+    }
 }
