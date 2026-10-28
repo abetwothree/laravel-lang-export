@@ -2,38 +2,68 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLang\Tests;
+namespace AbeTwoThree\LaravelLangExport\Tests;
 
-use AbeTwoThree\LaravelLang\LaravelLangServiceProvider;
-use Illuminate\Database\Eloquent\Factories\Factory;
+use AbeTwoThree\LaravelLangExport\LaravelLangExportServiceProvider;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Str;
+use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
+    use WithWorkbench;
 
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'AbeTwoThree\\LaravelLang\\Database\\Factories\\'.class_basename($modelName).'Factory'
-        );
+    private ?string $outputPath = null;
+
+    /**
+     * Removes this test's output directory.
+     */
+    protected function tearDown(): void
+    {
+        if ($this->outputPath !== null) {
+            (new Filesystem)->deleteDirectory($this->outputPath);
+            $this->outputPath = null;
+        }
+
+        parent::tearDown();
     }
 
-    public function getEnvironmentSetUp($app)
+    /**
+     * Returns this test's export directory, creating it on first use.
+     */
+    public function outputPath(): string
     {
-        config()->set('database.default', 'testing');
+        if ($this->outputPath === null) {
+            $this->outputPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.'lang-export-'.Str::random(16);
+            (new Filesystem)->ensureDirectoryExists($this->outputPath);
+        }
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/../database/migrations') as $migration) {
-            (include $migration->getRealPath())->up();
-         }
-         */
+        return $this->outputPath;
     }
 
-    protected function getPackageProviders($app)
+    /**
+     * Writes exports to this test's output directory.
+     *
+     * @param  Application  $app
+     */
+    protected function defineEnvironment($app): void
+    {
+        $app['config']->set('lang-export.output_path', $this->outputPath());
+    }
+
+    /**
+     * Registers the testbench.yaml providers and the package provider under test.
+     *
+     * @param  Application  $app
+     * @return list<class-string>
+     */
+    protected function getPackageProviders($app): array
     {
         return [
-            LaravelLangServiceProvider::class,
+            ...parent::getPackageProviders($app),
+            LaravelLangExportServiceProvider::class,
         ];
     }
 }
