@@ -32,7 +32,9 @@ final class LocaleDocument
     ) {}
 
     /**
-     * Reads a document back from its JSON, or returns null when the JSON is invalid or not an object.
+     * Reads a document back from its JSON, or returns null unless it is an object of strings and nested objects.
+     *
+     * A hand-edited file can hold any JSON, and a patch would otherwise carry its other values into the export.
      */
     public static function fromJson(string $locale, string $json): ?self
     {
@@ -46,15 +48,19 @@ final class LocaleDocument
             return null;
         }
 
-        /** @var LocaleLines $lines */
+        if (! is_array($lines) || ! self::isLangGroup($lines)) {
+            return null;
+        }
+
         return new self($locale, $lines);
     }
 
     /**
-     * Replaces this document's share of a unit: a group under its key, or all JSON lines.
+     * Replaces this document's share of a unit, a group under its key or all JSON lines, keeping the unit's warnings.
      */
     public function put(ParsedUnit $parsed): void
     {
+        array_push($this->warnings, ...$parsed->warnings);
         $key = $parsed->unit->key();
 
         if (! $parsed->unit->isJson()) {
@@ -70,18 +76,18 @@ final class LocaleDocument
         }
 
         foreach ($parsed->lines as $line => $value) {
-            if (is_array($this->lines[$line] ?? null) || ! is_string($value)) {
+            if (! is_string($value)) {
+                $this->warnings[] = "{$this->locale}: {$line} skipped (".get_debug_type($value).')';
+            } elseif (is_array($this->lines[$line] ?? null)) {
                 $this->warnings[] = $this->collisionWarning((string) $line);
-
-                continue;
+            } else {
+                $this->lines[$line] = $value;
             }
-
-            $this->lines[$line] = $value;
         }
     }
 
     /**
-     * Returns the collision warnings gathered by put().
+     * Returns the warnings of every unit put, in put order, with each unit's collisions after its own.
      *
      * @return list<string>
      */
@@ -107,6 +113,24 @@ final class LocaleDocument
         } catch (JsonException $exception) {
             throw LangExportException::unencodableLocale($this->locale, $exception);
         }
+    }
+
+    /**
+     * Tells whether every value of an array is a string or such an array, at any depth.
+     *
+     * @param  array<array-key, mixed>  $values
+     *
+     * @phpstan-assert-if-true LocaleLines $values
+     */
+    private static function isLangGroup(array $values): bool
+    {
+        foreach ($values as $value) {
+            if (! is_string($value) && ! (is_array($value) && self::isLangGroup($value))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

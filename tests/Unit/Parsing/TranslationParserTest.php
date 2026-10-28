@@ -7,10 +7,12 @@ use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 
 $parse = fn (TranslationUnit $u) => (new TranslationParser(
-    LangSources::fromTranslator(app('translator'), ExportOptions::fromConfig())
+    LangSources::fromTranslator(app('translator'), ExportOptions::fromConfig()),
+    new Filesystem,
 ))->parse($u);
 
 it('merges framework lines under app overrides', function () use ($parse) {
@@ -86,14 +88,36 @@ it('reports the locale, key and cause when a lang file cannot be loaded', functi
     $this->fail('Expected LangExportException.');
 });
 
-it('wraps a lang file that returns a non-array', function () use ($parse) {
-    $dir = $this->outputPath().'/scalar';
+it('names the lang file that returns a non-array', function (string $contents) use ($parse) {
+    $dir = $this->outputPath().'/nonarray';
     File::ensureDirectoryExists("$dir/en");
-    File::put("$dir/en/scalar.php", "<?php return 'x';");
+    File::put("$dir/en/scalar.php", $contents);
     config()->set('lang-export.paths', [$dir]);
 
-    $parse(new TranslationUnit('en', '*', 'scalar'));
-})->throws(LangExportException::class, 'Could not load en scalar');
+    expect(fn () => $parse(new TranslationUnit('en', '*', 'scalar')))->toThrow(
+        LangExportException::class,
+        'Could not load en scalar ('.normalizePath("$dir/en/scalar.php").'): the file must return an array.',
+    );
+})->with(['empty' => '', 'string' => "<?php return 'x';"]);
+
+it('keeps the load error when an earlier file of the unit returns an array', function () use ($parse) {
+    $dir = $this->outputPath().'/override';
+    File::ensureDirectoryExists("$dir/en");
+    File::put("$dir/en/auth.php", "<?php return ['a' => ;");
+    config()->set('lang-export.paths', [$dir]);
+
+    try {
+        $parse(new TranslationUnit('en', '*', 'auth'));
+    } catch (LangExportException $e) {
+        // Only the suffix: on Windows the temp dir can be an 8.3 short path while PHP reports the long one.
+        expect(normalizePath($e->getMessage()))->toContain('/override/en/auth.php:')
+            ->not->toContain('must return an array');
+
+        return;
+    }
+
+    $this->fail('Expected LangExportException.');
+});
 
 it('names the file when JSON is invalid', function () use ($parse) {
     $dir = $this->outputPath().'/badjson';

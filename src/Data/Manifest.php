@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Data;
 
 /**
- * The list of exported locales and the paths a watcher should observe, stored beside the locale files.
+ * The exported locales, the paths a watcher should observe and the fingerprint of what shaped them, stored beside
+ * the locale files.
  */
 final readonly class Manifest
 {
     public const int VERSION = 1;
 
     /**
-     * Creates a manifest from the exported locales and the directories to watch.
+     * Creates a manifest from the exported locales, the directories to watch and the export's fingerprint.
      *
      * @param  list<string>  $locales
      * @param  list<string>  $watch
@@ -20,6 +21,7 @@ final readonly class Manifest
     public function __construct(
         public array $locales,
         public array $watch,
+        public string $fingerprint,
     ) {}
 
     /**
@@ -33,22 +35,28 @@ final readonly class Manifest
 
         $locales = $data['locales'] ?? null;
         $watch = $data['watch'] ?? null;
+        $fingerprint = $data['fingerprint'] ?? null;
 
-        if (! self::isStringList($locales) || ! self::isStringList($watch)) {
+        if (! self::isStringList($locales) || ! self::isStringList($watch) || ! is_string($fingerprint)) {
             return null;
         }
 
-        return new self($locales, $watch);
+        return new self($locales, $watch, $fingerprint);
     }
 
     /**
      * Returns the manifest in its stored shape.
      *
-     * @return array{version: int, locales: list<string>, watch: list<string>}
+     * @return array{version: int, locales: list<string>, watch: list<string>, fingerprint: string}
      */
     public function toArray(): array
     {
-        return ['version' => self::VERSION, 'locales' => $this->locales, 'watch' => $this->watch];
+        return [
+            'version' => self::VERSION,
+            'locales' => $this->locales,
+            'watch' => $this->watch,
+            'fingerprint' => $this->fingerprint,
+        ];
     }
 
     /**

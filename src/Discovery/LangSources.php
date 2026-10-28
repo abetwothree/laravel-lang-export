@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AbeTwoThree\LaravelLangExport\Discovery;
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
+use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LaravelLangExport\Support\Path;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
 
@@ -47,13 +49,13 @@ final readonly class LangSources
         }
 
         foreach ($options->paths as $path) {
-            if (! in_array(self::normalize($path), self::normalizeList($loader->paths()), true)) {
+            if (! in_array(Path::normalize($path), self::normalizeList($loader->paths()), true)) {
                 $loader->addPath($path);
             }
         }
 
         foreach ($options->jsonPaths as $path) {
-            if (! in_array(self::normalize($path), self::normalizeList($loader->jsonPaths()), true)) {
+            if (! in_array(Path::normalize($path), self::normalizeList($loader->jsonPaths()), true)) {
                 $loader->addJsonPath($path);
             }
         }
@@ -69,7 +71,7 @@ final readonly class LangSources
             loader: $loader,
             groupPaths: self::normalizeList($loader->paths()),
             jsonPaths: self::normalizeList($loader->jsonPaths()),
-            namespaces: array_map(self::normalize(...), $loader->namespaces()),
+            namespaces: array_map(Path::normalize(...), $loader->namespaces()),
         );
     }
 
@@ -126,7 +128,7 @@ final readonly class LangSources
      */
     public function hasDirectory(string $path): bool
     {
-        return in_array(self::normalize($path), $this->directories(), true);
+        return in_array(Path::normalize($path), $this->directories(), true);
     }
 
     /**
@@ -138,7 +140,7 @@ final readonly class LangSources
      */
     public function watchDirectories(): array
     {
-        $base = self::normalize(base_path()).'/';
+        $base = Path::normalize(base_path()).'/';
         $directories = [];
 
         foreach ($this->directories() as $path) {
@@ -154,29 +156,36 @@ final readonly class LangSources
     }
 
     /**
-     * Converts a path to forward slashes with `.` and `..` collapsed and no trailing slash.
+     * Returns the PHP files the loader merges for a group unit, in load order, whether or not they exist.
      *
-     * Packages register `__DIR__.'/../lang'`. Collapsing lexically, unlike realpath(), still maps deleted files.
+     * Mirrors FileLoader::load(): an app group reads every lang path, a package group its hint and then each lang
+     * path's `vendor/{namespace}` override. A JSON unit or an unregistered namespace has none.
+     *
+     * @return StringList
      */
-    private static function normalize(string $path): string
+    public function groupFiles(TranslationUnit $unit): array
     {
-        $path = str_replace('\\', '/', $path);
-        $root = preg_match('#^(?:[A-Za-z]:)?/*#', $path, $match) === 1 ? $match[0] : '';
-        $segments = [];
+        $file = "{$unit->locale}/{$unit->group}.php";
 
-        foreach (explode('/', substr($path, strlen($root))) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment !== '..' || ($segments === [] && $root === '') || end($segments) === '..') {
-                $segments[] = $segment;
-            } elseif ($segments !== []) {
-                array_pop($segments);
-            }
+        if ($unit->isJson()) {
+            return [];
         }
 
-        return rtrim($root.implode('/', $segments), '/');
+        if ($unit->namespace === TranslationUnit::WILDCARD) {
+            return array_map(static fn (string $path): string => "{$path}/{$file}", $this->groupPaths);
+        }
+
+        if (! array_key_exists($unit->namespace, $this->namespaces)) {
+            return [];
+        }
+
+        return [
+            "{$this->namespaces[$unit->namespace]}/{$file}",
+            ...array_map(
+                static fn (string $path): string => "{$path}/vendor/{$unit->namespace}/{$file}",
+                $this->groupPaths,
+            ),
+        ];
     }
 
     /**
@@ -191,7 +200,7 @@ final readonly class LangSources
 
         foreach ($paths as $path) {
             if (is_string($path)) {
-                $normalized[] = self::normalize($path);
+                $normalized[] = Path::normalize($path);
             }
         }
 

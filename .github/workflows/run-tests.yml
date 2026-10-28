@@ -56,8 +56,14 @@ jobs:
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
       - name: Install dependencies
+        shell: bash
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          if [ "${{ matrix.laravel }}" = "12.*" ]; then
+            # Pest 5 needs symfony/process ^8.1 and Laravel 13; Laravel 12 and Testbench 10 pin symfony/process ^7.
+            # Pest 4 targets phpunit ^12.5, which Testbench 10 allows. Same fix as laravel-ts-publisher.
+            composer require --dev "pestphp/pest:^4.0" "pestphp/pest-plugin-arch:^4.0" "pestphp/pest-plugin-laravel:^4.0" --no-interaction --no-update
+          fi
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: List Installed Dependencies

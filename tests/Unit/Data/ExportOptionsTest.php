@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 
 it('reads every option from config', function () {
     config()->set('lang-export.locales', ['en']);
@@ -62,13 +63,13 @@ it('rejects a locales value that is not a list or null', function () {
     config()->set('lang-export.locales', 'en');
 
     ExportOptions::fromConfig();
-})->throws(InvalidArgumentException::class);
+})->throws(LangExportException::class, 'Config lang-export.locales must be a list of strings.');
 
 it('rejects locales that are not strings', function () {
     config()->set('lang-export.locales', ['en', 5]);
 
     ExportOptions::fromConfig();
-})->throws(InvalidArgumentException::class);
+})->throws(LangExportException::class, 'Config lang-export.locales must be a list of strings.');
 
 it('rejects namespaces that are not a string map', function (array $namespaces) {
     config()->set('lang-export.namespaces', $namespaces);
@@ -77,13 +78,13 @@ it('rejects namespaces that are not a string map', function (array $namespaces) 
 })->with([
     'list' => [['/tmp/blog']],
     'non-string value' => [['blog' => 5]],
-])->throws(InvalidArgumentException::class);
+])->throws(LangExportException::class, 'Config lang-export.namespaces must map string names to string paths.');
 
 it('rejects a keyed locales map', function () {
     config()->set('lang-export.locales', ['primary' => 'en']);
 
     ExportOptions::fromConfig();
-})->throws(InvalidArgumentException::class);
+})->throws(LangExportException::class, 'Config lang-export.locales must be a list of strings.');
 
 it('resolves relative config paths against the base path', function () {
     config()->set('lang-export.output_path', 'resources/js/lang');
@@ -104,3 +105,8 @@ it('treats an empty locales list as no locale filter', function () {
 
     expect(ExportOptions::fromConfig()->locales)->toBeNull();
 });
+
+it('reports a config value of the wrong type as a LangExportException', function () {
+    config()->set('lang-export.json', 'yes');
+    ExportOptions::fromConfig();
+})->throws(LangExportException::class, 'lang-export.json');

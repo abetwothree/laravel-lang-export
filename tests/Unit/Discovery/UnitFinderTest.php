@@ -7,6 +7,7 @@ use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Discovery\UnitFinder;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\File;
 
 use function Orchestra\Testbench\workbench_path;
 
@@ -109,4 +110,23 @@ it('counts a file inside a configured JSON path as inside', function () use ($fi
 it('resolves a relative path before checking it is inside', function () use ($finder) {
     config()->set('lang-export.paths', [base_path('lang-relative')]);
     expect($finder()->isInsideLangDirectory('lang-relative/en/notes.txt'))->toBeTrue();
+});
+
+it('maps a path whose drive letter case differs from the registered path', function () use ($finder, $ids) {
+    config()->set('lang-export.paths', ['C:/app/lang']);
+    expect($ids([$finder()->forFile('c:\\app\\lang\\en\\auth.php'), $finder()->forFile('c:/app/lang/en/auth.php')]))
+        ->toBe(['en:auth', 'en:auth'])
+        ->and($finder()->isInsideLangDirectory('c:/app/lang/readme.md'))->toBeTrue();
+});
+
+it('maps a path with doubled slashes', function () use ($finder, $ids) {
+    expect($ids([$finder()->forFile(workbench_path('lang-app').'//en//auth.php')]))->toBe(['en:auth']);
+});
+
+it('finds JSON files in a directory whose name has glob brackets', function () use ($finder, $ids) {
+    $dir = $this->outputPath().'/lang[x]';
+    File::ensureDirectoryExists($dir);
+    File::put("{$dir}/zz.json", '{"Hi": "Hi"}');
+    config()->set('lang-export.json_paths', [$dir]);
+    expect($ids($finder()->all()))->toContain('zz:*');
 });

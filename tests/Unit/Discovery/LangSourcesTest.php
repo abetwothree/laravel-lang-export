@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
+use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use Illuminate\Support\Facades\File;
@@ -110,6 +111,8 @@ it('collapses . and .. lexically', function (string $path, string $canonical) us
     ['C:/../y', 'C:/y'],
     ['//server/share/../z', '//server/z'],
     ['rel/../../w', '../w'],
+    ['c:\\x\\y\\', 'C:/x/y'],
+    ['c:/x//y', 'C:/x/y'],
 ]);
 
 it('rejects a loader that does not extend FileLoader', function () use ($sources) {
@@ -120,3 +123,14 @@ it('rejects a loader that does not extend FileLoader', function () use ($sources
     LangExportException::class,
     'The translation loader ['.ArrayLoader::class.'] must extend Illuminate\\Translation\\FileLoader.',
 );
+
+it('lists the group files the loader merges for a unit, in load order', function () use ($sources) {
+    $s = $sources();
+    expect($s->groupFiles(new TranslationUnit('en', 'courier', 'mail')))->toBe([
+        "{$s->namespaces()['courier']}/en/mail.php",
+        ...array_map(fn (string $p) => "{$p}/vendor/courier/en/mail.php", $s->groupPaths()),
+    ])
+        ->and($s->groupFiles(new TranslationUnit('en', '*', 'auth')))
+        ->toBe(array_map(fn (string $p) => "{$p}/en/auth.php", $s->groupPaths()))
+        ->and($s->groupFiles(TranslationUnit::json('en')))->toBe([]);
+});

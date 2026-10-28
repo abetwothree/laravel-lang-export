@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -108,11 +109,10 @@ it('only removes locale files that exist inside the output directory', function 
         'version' => 1,
         'locales' => ['../'.basename($this->outputPath()).'-outside', 'zz'],
         'watch' => [],
+        'fingerprint' => 'x',
     ]));
     $this->artisan('lang:export')->doesntExpectOutputToContain('Removed')->assertSuccessful();
-    $kept = File::exists($outside);
-    File::delete($outside);
-    expect($kept)->toBeTrue();
+    expect(File::exists($outside))->toBeTrue();
 });
 
 it('writes to --output', function () {
@@ -193,7 +193,6 @@ it('fails without writing when a lang file cannot be loaded', function () {
     File::put("$dir/en/broken.php", "<?php return ['a' => ;");
     config()->set('lang-export.paths', [$dir]);
     $this->artisan('lang:export')->expectsOutputToContain('broken.php')->assertFailed();
-    File::deleteDirectory($dir);
     expect(File::exists($this->outputPath().'/en.json'))->toBeFalse()
         ->and(File::files($this->outputPath()))->toBeEmpty();
 });
@@ -204,7 +203,6 @@ it('fails without writing when a line cannot be encoded', function () {
     File::put("$dir/en/bad.php", "<?php return ['bad' => \"\\xB1\\x31\"];");
     config()->set('lang-export.paths', [$dir]);
     $this->artisan('lang:export')->expectsOutputToContain('Could not encode the en locale file')->assertFailed();
-    File::deleteDirectory($dir);
     expect(File::files($this->outputPath()))->toBeEmpty();
 });
 
@@ -228,4 +226,43 @@ it('publishes the workbench sample output', function () {
     expect(File::exists(workbench_path('resources/js/lang/en.json')))->toBeTrue()
         ->and(File::exists(workbench_path('resources/js/lang/manifest.json')))->toBeTrue()
         ->and(File::get(workbench_path('resources/js/lang/es.json')))->toStartWith("{\n    \"Welcome\"");
+});
+
+it('prints malformed config as an error', function () {
+    config()->set('lang-export.locales', 'en');
+    $this->artisan('lang:export')
+        ->expectsOutputToContain('Config lang-export.locales must be a list of strings.')->assertFailed();
+});
+
+it('refuses an output path that is the base path', function (array $config, array $flags) {
+    config()->set($config);
+
+    try {
+        $this->artisan('lang:export', $flags)->expectsOutputToContain('is the base path.')->assertFailed();
+        expect(File::exists(base_path('manifest.json')))->toBeFalse();
+    } finally {
+        // The red run writes into the Testbench skeleton; leave it clean.
+        File::delete(array_map(base_path(...), ['de.json', 'en.json', 'es.json', 'manifest.json']));
+    }
+})->with([
+    'empty config' => [['lang-export.output_path' => ''], []],
+    'dot config' => [['lang-export.output_path' => '.'], []],
+    'dot flag' => [[], ['--output' => '.']],
+]);
+
+it('prints written, unchanged and removed files, then warnings, in that order', function () {
+    $live = $this->outputPath().'-live';
+    File::ensureDirectoryExists("{$live}/en");
+    File::put("{$live}/en/live.php", "<?php return ['a' => 'A'];");
+    config()->set('lang-export.paths', [$live]);
+    Artisan::call('lang:export');
+    File::put("{$live}/en/live.php", "<?php return ['a' => 'B'];");
+
+    Artisan::call('lang:export', ['--locale' => ['en', 'es', 'xx']]);
+
+    expect(array_values(array_filter(preg_split('/\R/', Artisan::output()))))->toBe([
+        'Wrote en.json', 'Unchanged es.json', 'Removed de.json', 'xx: no lang files found',
+        'en: mixed.count skipped (int)', 'en: mixed.closure skipped (Closure)',
+        'en: mixed.missing skipped (null)', 'en: mixed.deep.flag skipped (bool)',
+    ]);
 });

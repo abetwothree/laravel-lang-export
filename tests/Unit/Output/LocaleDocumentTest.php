@@ -121,3 +121,34 @@ it('names the locale when a line cannot be encoded', function () {
 
     $this->fail('Expected a LangExportException.');
 });
+
+it('rejects a read-back file holding values other than strings and objects', function (string $json) {
+    expect(LocaleDocument::fromJson('en', $json))->toBeNull();
+})->with([
+    'number line' => ['{"Hi": 5}'],
+    'null leaf' => ['{"auth": {"failed": null}}'],
+    'deep bool leaf' => ['{"auth": {"a": {"b": true}}}'],
+]);
+
+it('reads back nested groups of strings, empty ones included', function () {
+    expect(LocaleDocument::fromJson('en', '{"Hi": "Hi", "auth": {"a": {"b": "B"}, "c": []}}')?->toJson(false))
+        ->toBe('{"Hi":"Hi","auth":{"a":{"b":"B"},"c":[]}}');
+});
+
+it('warns about a non-string JSON value as skipped, not as a collision', function () {
+    $doc = new LocaleDocument('en');
+    $doc->put(new ParsedUnit(TranslationUnit::json('en'), ['Hi' => ['x' => 'y'], 'Bye' => 'Bye'], []));
+    expect($doc->warnings())->toBe(['en: Hi skipped (array)'])
+        ->and($doc->toJson(false))->toBe('{"Bye":"Bye"}');
+});
+
+it('returns the warnings of every unit put, each before its collisions', function () {
+    $doc = new LocaleDocument('en');
+    $doc->put(new ParsedUnit(TranslationUnit::json('en'), ['auth' => 'Auth'], ['en: x skipped (int)']));
+    $doc->put(new ParsedUnit(new TranslationUnit('en', '*', 'auth'), ['a' => 'A'], ['en: auth.y skipped (null)']));
+    expect($doc->warnings())->toBe([
+        'en: x skipped (int)',
+        'en: auth.y skipped (null)',
+        'en: JSON line "auth" skipped, a group has the same key',
+    ]);
+});

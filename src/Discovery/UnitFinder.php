@@ -6,6 +6,7 @@ namespace AbeTwoThree\LaravelLangExport\Discovery;
 
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use AbeTwoThree\LaravelLangExport\Support\BasePath;
+use AbeTwoThree\LaravelLangExport\Support\Path;
 use Illuminate\Filesystem\Filesystem;
 
 /**
@@ -39,7 +40,7 @@ final readonly class UnitFinder
                 }
             }
 
-            foreach ($this->sources->namespaces() as $namespace => $hint) {
+            foreach (array_keys($this->sources->namespaces()) as $namespace) {
                 $this->collectNamespace($units, "{$path}/".self::VENDOR."/{$namespace}", $namespace);
             }
         }
@@ -49,13 +50,12 @@ final readonly class UnitFinder
         }
 
         foreach ([...$this->sources->groupPaths(), ...$this->sources->jsonPaths()] as $directory) {
-            foreach ($this->files->glob("{$directory}/*.json") as $file) {
-                if (! is_string($file)) {
-                    continue;
+            // Not glob(): it reads `[` and `]` in a directory name as a character class.
+            foreach ($this->files->isDirectory($directory) ? $this->files->files($directory) : [] as $file) {
+                if ($file->getExtension() === 'json') {
+                    $unit = TranslationUnit::json($file->getBasename('.json'));
+                    $units[$unit->locale."\0".$unit->key()] = $unit;
                 }
-
-                $unit = TranslationUnit::json(basename($file, '.json'));
-                $units[$unit->locale."\0".$unit->key()] = $unit;
             }
         }
 
@@ -77,7 +77,7 @@ final readonly class UnitFinder
         }
 
         foreach ($this->sources->groupPaths() as $groupPath) {
-            foreach ($this->sources->namespaces() as $namespace => $hint) {
+            foreach (array_keys($this->sources->namespaces()) as $namespace) {
                 $unit = $this->groupUnit($path, "{$groupPath}/".self::VENDOR."/{$namespace}", $namespace);
 
                 if ($unit !== null) {
@@ -131,18 +131,18 @@ final readonly class UnitFinder
     }
 
     /**
-     * Makes a path absolute with forward slashes and no `.` segments, or returns null when it has a `..` segment.
+     * Makes a path absolute and normalized like the lang directories, or returns null when it has a `..` segment.
      */
     private function canonical(string $path): ?string
     {
-        $segments = explode('/', rtrim(str_replace('\\', '/', BasePath::resolve($path)), '/'));
+        $path = BasePath::resolve($path);
 
         // The loader would follow a `..` out of the lang directory a prefix match vouches for.
-        if (in_array('..', $segments, true)) {
+        if (in_array('..', explode('/', str_replace('\\', '/', $path)), true)) {
             return null;
         }
 
-        return implode('/', array_filter($segments, static fn (string $segment): bool => $segment !== '.'));
+        return Path::normalize($path);
     }
 
     /**

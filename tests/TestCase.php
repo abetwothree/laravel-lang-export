@@ -18,12 +18,18 @@ class TestCase extends Orchestra
     private ?string $outputPath = null;
 
     /**
-     * Removes this test's output directory.
+     * Removes this test's output directory and every `{output}-*` sibling a test made beside it.
      */
     protected function tearDown(): void
     {
         if ($this->outputPath !== null) {
-            (new Filesystem)->deleteDirectory($this->outputPath);
+            $files = new Filesystem;
+            $files->deleteDirectory($this->outputPath);
+
+            foreach ($files->glob("{$this->outputPath}-*") as $sibling) {
+                $files->isDirectory($sibling) ? $files->deleteDirectory($sibling) : $files->delete($sibling);
+            }
+
             $this->outputPath = null;
         }
 

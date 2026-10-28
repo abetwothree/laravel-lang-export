@@ -21,37 +21,37 @@ $doc = function (): LocaleDocument {
 it('writes a locale file and reports it', function () use ($doc) {
     $out = $this->outputPath();
 
-    expect((new OutputDirectory(new Filesystem, $out))->write($doc(), false))->toBeTrue()
+    expect((new OutputDirectory(new Filesystem, $out))->writeJson('en', $doc()->toJson(false)))->toBeTrue()
         ->and(File::get("{$out}/en.json"))->toBe($doc()->toJson(false)."\n");
 });
 
 it('creates a missing output directory', function () use ($doc) {
     $out = $this->outputPath().'/nested/lang';
 
-    expect((new OutputDirectory(new Filesystem, $out))->write($doc(), false))->toBeTrue()
+    expect((new OutputDirectory(new Filesystem, $out))->writeJson('en', $doc()->toJson(false)))->toBeTrue()
         ->and(File::exists("{$out}/en.json"))->toBeTrue();
 });
 
 it('skips writing identical content', function () use ($doc) {
     $out = $this->outputPath();
     $dir = new OutputDirectory(new Filesystem, $out);
-    $dir->write($doc(), false);
+    $dir->writeJson('en', $doc()->toJson(false));
     touch("{$out}/en.json", time() - 3600);
     $mtime = filemtime("{$out}/en.json");
     clearstatcache();
 
-    expect($dir->write($doc(), false))->toBeFalse();
+    expect($dir->writeJson('en', $doc()->toJson(false)))->toBeFalse();
     clearstatcache();
 
     expect(filemtime("{$out}/en.json"))->toBe($mtime)
-        ->and($dir->write($doc(), true))->toBeTrue();
+        ->and($dir->writeJson('en', $doc()->toJson(true)))->toBeTrue();
 });
 
 it('leaves no temp file behind', function () use ($doc) {
     $out = $this->outputPath();
     $dir = new OutputDirectory(new Filesystem, $out);
-    $dir->write($doc(), false);
-    $dir->writeManifest(new Manifest(['en'], ['lang']));
+    $dir->writeJson('en', $doc()->toJson(false));
+    $dir->writeManifest(new Manifest(['en'], ['lang'], 'fp'));
 
     expect(glob("{$out}/*.tmp"))->toBe([]);
 });
@@ -67,7 +67,7 @@ it('returns null for a missing or invalid locale file', function () {
 
 it('reads back a written locale file', function () use ($doc) {
     $dir = new OutputDirectory(new Filesystem, $this->outputPath());
-    $dir->write($doc(), false);
+    $dir->writeJson('en', $doc()->toJson(false));
 
     expect($dir->read('en')?->toJson(false))->toBe($doc()->toJson(false));
 });
@@ -77,10 +77,10 @@ it('round trips the manifest', function () {
     $dir = new OutputDirectory(new Filesystem, $out);
 
     expect($dir->readManifest())->toBeNull()
-        ->and($dir->writeManifest(new Manifest(['en'], ['lang'])))->toBeTrue()
-        ->and(File::get("{$out}/manifest.json"))->toBe('{"version":1,"locales":["en"],"watch":["lang"]}'."\n")
-        ->and($dir->readManifest())->toEqual(new Manifest(['en'], ['lang']))
-        ->and($dir->writeManifest(new Manifest(['en'], ['lang'])))->toBeFalse();
+        ->and($dir->writeManifest(new Manifest(['en'], ['lang'], 'fp')))->toBeTrue()
+        ->and(File::get("{$out}/manifest.json"))->toBe('{"version":1,"locales":["en"],"watch":["lang"],"fingerprint":"fp"}'."\n")
+        ->and($dir->readManifest())->toEqual(new Manifest(['en'], ['lang'], 'fp'))
+        ->and($dir->writeManifest(new Manifest(['en'], ['lang'], 'fp')))->toBeFalse();
 
     File::put("{$out}/manifest.json", '{"version":2,"locales":[],"watch":[]}');
     expect($dir->readManifest())->toBeNull();
@@ -89,7 +89,7 @@ it('round trips the manifest', function () {
 it('deletes a locale file', function () use ($doc) {
     $out = $this->outputPath();
     $dir = new OutputDirectory(new Filesystem, $out);
-    $dir->write($doc(), false);
+    $dir->writeJson('en', $doc()->toJson(false));
 
     expect($dir->delete('en'))->toBeTrue()
         ->and(File::exists("{$out}/en.json"))->toBeFalse()
@@ -101,8 +101,8 @@ it('throws and leaves no temp file when a file cannot be written', function (str
     mkdir("{$out}/{$target}");
     $dir = new OutputDirectory(new Filesystem, $out);
     $write = fn () => $target === 'manifest.json'
-        ? $dir->writeManifest(new Manifest(['en'], ['lang']))
-        : $dir->write($doc(), false);
+        ? $dir->writeManifest(new Manifest(['en'], ['lang'], 'fp'))
+        : $dir->writeJson('en', $doc()->toJson(false));
 
     expect($write)->toThrow(LangExportException::class, "Could not write [{$out}/{$target}]")
         ->and(glob("{$out}/*.tmp"))->toBe([]);
@@ -113,7 +113,7 @@ it('chains the OS error that stopped a write and shows its reason', function () 
     mkdir("{$out}/en.json");
 
     try {
-        (new OutputDirectory(new Filesystem, $out))->write($doc(), false);
+        (new OutputDirectory(new Filesystem, $out))->writeJson('en', $doc()->toJson(false));
     } catch (LangExportException $exception) {
     }
 
@@ -136,11 +136,25 @@ it('writes through a temp file unique to each write', function () use ($doc) {
         }
     };
     $dir = new OutputDirectory($files, $out);
-    $dir->write($doc(), false);
-    $dir->write($doc(), true);
+    $dir->writeJson('en', $doc()->toJson(false));
+    $dir->writeJson('en', $doc()->toJson(true));
 
     expect($files->puts)->toHaveCount(2)
         ->and($files->puts[0])->not->toBe($files->puts[1])
         ->and($files->puts)->each->toStartWith("{$out}/en.json.")->toEndWith('.tmp')
         ->and(glob("{$out}/*.tmp"))->toBe([]);
+});
+
+it('removes orphaned temp files and nothing else', function () {
+    $out = $this->outputPath();
+    foreach (['en.json.0123456789abcdef.tmp', 'manifest.json.fedcba9876543210.tmp', 'en.json', 'notes.tmp', 'en.json.xyz.tmp'] as $name) {
+        File::put("{$out}/{$name}", '{}');
+    }
+    (new OutputDirectory(new Filesystem, $out))->removeTempFiles();
+    expect(array_map(fn ($f) => $f->getFilename(), File::files($out)))->toBe(['en.json', 'en.json.xyz.tmp', 'notes.tmp']);
+});
+
+it('ignores a missing output directory when removing temp files', function () {
+    (new OutputDirectory(new Filesystem, $this->outputPath().'/none'))->removeTempFiles();
+    expect(File::exists($this->outputPath().'/none'))->toBeFalse();
 });

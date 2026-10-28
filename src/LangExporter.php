@@ -17,9 +17,12 @@ use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
+use AbeTwoThree\LaravelLangExport\Support\ExportFingerprint;
+use AbeTwoThree\LaravelLangExport\Support\ExportLock;
+use AbeTwoThree\LaravelLangExport\Support\PackageVersion;
+use AbeTwoThree\LaravelLangExport\Support\Path;
 use Closure;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Filesystem\LockableFile;
 use Illuminate\Translation\Translator;
 use Throwable;
 
@@ -33,6 +36,8 @@ use Throwable;
 final readonly class LangExporter
 {
     private const string LOCK_FILE = 'framework/lang-export.lock';
+
+    private const float LOCK_TIMEOUT = 30.0;
 
     /**
      * Creates an exporter reading through the app's translator.
@@ -55,15 +60,18 @@ final readonly class LangExporter
     {
         $sources = $this->sources($options);
 
-        return $this->locked(fn (): ExportResult => $this->exportSources($sources, $options));
+        return $this->locked(
+            $options->outputPath,
+            fn (OutputDirectory $output): ExportResult => $this->exportSources($sources, $options, $output),
+        );
     }
 
     /**
      * Re-exports the unit one changed, added or deleted lang file belongs to, writing what a full export would.
      *
-     * Used by a file watcher on every change. The unit is patched into its locale's existing file; a missing manifest
-     * falls back to a full export, and a missing, unlisted or unreadable locale file to a whole-locale export. A file
-     * inside a lang directory that is not a unit is skipped; one outside every lang directory fails.
+     * Used by a file watcher on every change. The unit is patched into its locale's existing file. A missing or stale
+     * manifest (another version, other options or other lang directories) falls back to a full export, and a missing,
+     * unlisted or unreadable locale file to a whole-locale export. A non-unit lang file is skipped; others fail.
      *
      * @throws LangExportException
      */
@@ -86,16 +94,23 @@ final readonly class LangExporter
             return new ExportResult(skipped: SkipReason::Filtered);
         }
 
-        return $this->locked(fn (): ExportResult => $this->exportUnit($sources, $options, $unit));
+        return $this->locked(
+            $options->outputPath,
+            fn (OutputDirectory $output): ExportResult => $this->exportUnit($sources, $options, $output, $unit),
+        );
     }
 
     /**
-     * Snapshots the lang sources, refusing an output path that is one of their directories.
+     * Snapshots the lang sources, refusing an output path that is the base path or one of their directories.
      *
      * @throws LangExportException
      */
     private function sources(ExportOptions $options): LangSources
     {
+        if (Path::normalize($options->outputPath) === Path::normalize(base_path())) {
+            throw LangExportException::outputIsBasePath($options->outputPath);
+        }
+
         $sources = LangSources::fromTranslator($this->translator, $options);
 
         if ($sources->hasDirectory($options->outputPath)) {
@@ -110,7 +125,7 @@ final readonly class LangExporter
      *
      * @throws LangExportException
      */
-    private function exportSources(LangSources $sources, ExportOptions $options): ExportResult
+    private function exportSources(LangSources $sources, ExportOptions $options, OutputDirectory $output): ExportResult
     {
         $parsedLocales = $this->parseLocales($sources, $options);
 
@@ -119,11 +134,10 @@ final readonly class LangExporter
             throw LangExportException::noLangFiles($options->locales);
         }
 
-        $output = new OutputDirectory($this->files, $options->outputPath);
         $result = $this->writeLocales($output, $parsedLocales, $options->prettyPrint);
         $locales = array_keys($parsedLocales);
         $removed = $this->removeDropped($output, $locales);
-        $output->writeManifest(new Manifest($locales, $sources->watchDirectories()));
+        $output->writeManifest(new Manifest($locales, $sources->watchDirectories(), $this->fingerprint($options, $sources)));
         $warnings = [];
 
         foreach (array_unique(array_diff($options->locales ?? [], $locales)) as $locale) {
@@ -138,13 +152,17 @@ final readonly class LangExporter
      *
      * @throws LangExportException
      */
-    private function exportUnit(LangSources $sources, ExportOptions $options, TranslationUnit $unit): ExportResult
-    {
-        $output = new OutputDirectory($this->files, $options->outputPath);
+    private function exportUnit(
+        LangSources $sources,
+        ExportOptions $options,
+        OutputDirectory $output,
+        TranslationUnit $unit,
+    ): ExportResult {
         $manifest = $output->readManifest();
 
-        if ($manifest === null) {
-            return $this->exportSources($sources, $options);
+        // Another version, other options or other lang directories would make a patch differ from a full export.
+        if ($manifest === null || $manifest->fingerprint !== $this->fingerprint($options, $sources)) {
+            return $this->exportSources($sources, $options, $output);
         }
 
         $document = in_array($unit->locale, $manifest->locales, true) ? $output->read($unit->locale) : null;
@@ -153,7 +171,7 @@ final readonly class LangExporter
             return $this->exportLocale($sources, $options, $output, $manifest, $unit->locale);
         }
 
-        $parsed = (new TranslationParser($sources))->parse($unit);
+        $parsed = (new TranslationParser($sources, $this->files))->parse($unit);
 
         // Dropping a key can uncover a JSON line it displaced or leave the locale empty; only a full re-read knows.
         if ($parsed->lines === []) {
@@ -161,12 +179,8 @@ final readonly class LangExporter
         }
 
         $document->put($parsed);
-        $json = $document->toJson($options->prettyPrint);
-        $warnings = [...$parsed->warnings, ...$document->warnings()];
 
-        return $output->writeJson($unit->locale, $json)
-            ? new ExportResult(written: [$unit->locale], warnings: $warnings)
-            : new ExportResult(unchanged: [$unit->locale], warnings: $warnings);
+        return $this->writeDocuments($output, [$document], $options->prettyPrint);
     }
 
     /**
@@ -181,7 +195,7 @@ final readonly class LangExporter
     private function parseLocales(LangSources $sources, ExportOptions $options, ?string $locale = null): array
     {
         $filter = new UnitFilter($options);
-        $parser = new TranslationParser($sources);
+        $parser = new TranslationParser($sources, $this->files);
         $locales = [];
 
         foreach ((new UnitFinder($sources, $this->files))->all() as $unit) {
@@ -200,7 +214,7 @@ final readonly class LangExporter
     }
 
     /**
-     * Assembles and encodes every locale's document before writing any, so an unencodable line writes nothing.
+     * Assembles every locale's document from its parsed units and writes them.
      *
      * @param  ParsedLocales  $parsedLocales
      *
@@ -208,29 +222,43 @@ final readonly class LangExporter
      */
     private function writeLocales(OutputDirectory $output, array $parsedLocales, bool $pretty): ExportResult
     {
-        $encoded = [];
-        $written = [];
-        $unchanged = [];
-        $warnings = [];
+        $documents = [];
 
         foreach ($parsedLocales as $locale => $units) {
             $document = new LocaleDocument($locale);
 
             foreach ($units as $parsed) {
                 $document->put($parsed);
-                array_push($warnings, ...$parsed->warnings);
+            }
+
+            $documents[] = $document;
+        }
+
+        return $this->writeDocuments($output, $documents, $pretty);
+    }
+
+    /**
+     * Encodes every document before writing any, so an unencodable line writes nothing.
+     *
+     * @param  list<LocaleDocument>  $documents
+     *
+     * @throws LangExportException
+     */
+    private function writeDocuments(OutputDirectory $output, array $documents, bool $pretty): ExportResult
+    {
+        $encoded = array_map(static fn (LocaleDocument $document): string => $document->toJson($pretty), $documents);
+        $written = [];
+        $unchanged = [];
+        $warnings = [];
+
+        foreach ($documents as $index => $document) {
+            if ($output->writeJson($document->locale, $encoded[$index])) {
+                $written[] = $document->locale;
+            } else {
+                $unchanged[] = $document->locale;
             }
 
             array_push($warnings, ...$document->warnings());
-            $encoded[$locale] = $document->toJson($pretty);
-        }
-
-        foreach ($encoded as $locale => $json) {
-            if ($output->writeJson($locale, $json)) {
-                $written[] = $locale;
-            } else {
-                $unchanged[] = $locale;
-            }
         }
 
         return new ExportResult($written, $unchanged, warnings: $warnings);
@@ -262,7 +290,7 @@ final readonly class LangExporter
             $removed[] = $locale;
         }
 
-        $output->writeManifest(new Manifest($locales, $manifest->watch));
+        $output->writeManifest(new Manifest($locales, $manifest->watch, $manifest->fingerprint));
 
         return new ExportResult($result->written, $result->unchanged, $removed, $result->warnings);
     }
@@ -292,28 +320,48 @@ final readonly class LangExporter
     }
 
     /**
+     * Fingerprints this run's options and lang sources with the installed package version.
+     */
+    private function fingerprint(ExportOptions $options, LangSources $sources): string
+    {
+        return ExportFingerprint::compute($options, $sources, PackageVersion::current());
+    }
+
+    /**
      * Runs an export step under an exclusive lock, so concurrent runs cannot interleave their reads and writes.
      *
-     * The lock file lives in storage, never in the output directory the frontend ships.
+     * The lock file lives in storage, never in the output directory the frontend ships. Only a held lock makes the
+     * output's leftover temp files safe to delete: no other run can be mid-write.
      *
-     * @param  Closure(): ExportResult  $export
+     * @param  Closure(OutputDirectory): ExportResult  $export
      *
      * @throws LangExportException
      */
-    private function locked(Closure $export): ExportResult
+    private function locked(string $outputPath, Closure $export): ExportResult
     {
         $path = storage_path(self::LOCK_FILE);
 
         try {
-            $lock = (new LockableFile($path, 'c'))->getExclusiveLock(true);
+            $this->files->ensureDirectoryExists(dirname($path));
         } catch (Throwable $exception) {
             throw LangExportException::unwritableFile($path, $exception);
         }
 
+        $lock = ExportLock::acquire($path, self::LOCK_TIMEOUT);
+        $output = new OutputDirectory($this->files, $outputPath);
+
         try {
-            return $export();
+            if ($lock->held) {
+                $output->removeTempFiles();
+            }
+
+            $result = $export($output);
         } finally {
-            $lock->close();
+            $lock->release();
         }
+
+        return $lock->held
+            ? $result
+            : $result->withWarning("Exported without a lock: the filesystem holding [{$path}] does not support file locking.");
     }
 }

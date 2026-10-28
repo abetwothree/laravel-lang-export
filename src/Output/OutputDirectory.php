@@ -17,6 +17,9 @@ final readonly class OutputDirectory
 {
     private const string MANIFEST = 'manifest.json';
 
+    /** The name writeIfChanged() gives a temp file: the target, 8 random bytes in hex, then `.tmp`. */
+    private const string TEMP_FILE = '/\.json\.[0-9a-f]{16}\.tmp$/';
+
     /**
      * Creates the directory handle; nothing is touched until a read or write.
      */
@@ -33,14 +36,6 @@ final readonly class OutputDirectory
         $contents = $this->contents($this->localePath($locale));
 
         return $contents === null ? null : LocaleDocument::fromJson($locale, $contents);
-    }
-
-    /**
-     * Writes a locale's document; returns false when the file already holds the same bytes.
-     */
-    public function write(LocaleDocument $document, bool $pretty): bool
-    {
-        return $this->writeJson($document->locale, $document->toJson($pretty));
     }
 
     /**
@@ -87,6 +82,22 @@ final readonly class OutputDirectory
         $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
 
         return $this->writeIfChanged($this->path.'/'.self::MANIFEST, json_encode($manifest->toArray(), $flags)."\n");
+    }
+
+    /**
+     * Deletes the temp files a run that died between write and rename left behind; the caller holds the export lock.
+     */
+    public function removeTempFiles(): void
+    {
+        if (! $this->files->isDirectory($this->path)) {
+            return;
+        }
+
+        foreach ($this->files->files($this->path) as $file) {
+            if (preg_match(self::TEMP_FILE, $file->getFilename()) === 1) {
+                $this->files->delete($file->getPathname());
+            }
+        }
     }
 
     /**
