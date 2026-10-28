@@ -166,12 +166,8 @@ final readonly class LangExporter
         }
 
         $document->put($parsed);
-        $json = $document->toJson($options->prettyPrint);
-        $warnings = [...$parsed->warnings, ...$document->warnings()];
 
-        return $output->writeJson($unit->locale, $json)
-            ? new ExportResult(written: [$unit->locale], warnings: $warnings)
-            : new ExportResult(unchanged: [$unit->locale], warnings: $warnings);
+        return $this->writeDocuments($output, [$document], $options->prettyPrint);
     }
 
     /**
@@ -205,7 +201,7 @@ final readonly class LangExporter
     }
 
     /**
-     * Assembles and encodes every locale's document before writing any, so an unencodable line writes nothing.
+     * Assembles every locale's document from its parsed units and writes them.
      *
      * @param  ParsedLocales  $parsedLocales
      *
@@ -213,29 +209,43 @@ final readonly class LangExporter
      */
     private function writeLocales(OutputDirectory $output, array $parsedLocales, bool $pretty): ExportResult
     {
-        $encoded = [];
-        $written = [];
-        $unchanged = [];
-        $warnings = [];
+        $documents = [];
 
         foreach ($parsedLocales as $locale => $units) {
             $document = new LocaleDocument($locale);
 
             foreach ($units as $parsed) {
                 $document->put($parsed);
-                array_push($warnings, ...$parsed->warnings);
+            }
+
+            $documents[] = $document;
+        }
+
+        return $this->writeDocuments($output, $documents, $pretty);
+    }
+
+    /**
+     * Encodes every document before writing any, so an unencodable line writes nothing.
+     *
+     * @param  list<LocaleDocument>  $documents
+     *
+     * @throws LangExportException
+     */
+    private function writeDocuments(OutputDirectory $output, array $documents, bool $pretty): ExportResult
+    {
+        $encoded = array_map(static fn (LocaleDocument $document): string => $document->toJson($pretty), $documents);
+        $written = [];
+        $unchanged = [];
+        $warnings = [];
+
+        foreach ($documents as $index => $document) {
+            if ($output->writeJson($document->locale, $encoded[$index])) {
+                $written[] = $document->locale;
+            } else {
+                $unchanged[] = $document->locale;
             }
 
             array_push($warnings, ...$document->warnings());
-            $encoded[$locale] = $document->toJson($pretty);
-        }
-
-        foreach ($encoded as $locale => $json) {
-            if ($output->writeJson($locale, $json)) {
-                $written[] = $locale;
-            } else {
-                $unchanged[] = $locale;
-            }
         }
 
         return new ExportResult($written, $unchanged, warnings: $warnings);

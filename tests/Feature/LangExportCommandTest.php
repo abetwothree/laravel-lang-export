@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -247,3 +248,20 @@ it('refuses an output path that is the base path', function (array $config, arra
     'dot config' => [['lang-export.output_path' => '.'], []],
     'dot flag' => [[], ['--output' => '.']],
 ]);
+
+it('prints written, unchanged and removed files, then warnings, in that order', function () {
+    $live = $this->outputPath().'-live';
+    File::ensureDirectoryExists("{$live}/en");
+    File::put("{$live}/en/live.php", "<?php return ['a' => 'A'];");
+    config()->set('lang-export.paths', [$live]);
+    Artisan::call('lang:export');
+    File::put("{$live}/en/live.php", "<?php return ['a' => 'B'];");
+
+    Artisan::call('lang:export', ['--locale' => ['en', 'es', 'xx']]);
+
+    expect(array_values(array_filter(preg_split('/\R/', Artisan::output()))))->toBe([
+        'Wrote en.json', 'Unchanged es.json', 'Removed de.json', 'xx: no lang files found',
+        'en: mixed.count skipped (int)', 'en: mixed.closure skipped (Closure)',
+        'en: mixed.missing skipped (null)', 'en: mixed.deep.flag skipped (bool)',
+    ]);
+});

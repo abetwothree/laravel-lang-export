@@ -56,10 +56,11 @@ final class LocaleDocument
     }
 
     /**
-     * Replaces this document's share of a unit: a group under its key, or all JSON lines.
+     * Replaces this document's share of a unit, a group under its key or all JSON lines, keeping the unit's warnings.
      */
     public function put(ParsedUnit $parsed): void
     {
+        array_push($this->warnings, ...$parsed->warnings);
         $key = $parsed->unit->key();
 
         if (! $parsed->unit->isJson()) {
@@ -75,18 +76,18 @@ final class LocaleDocument
         }
 
         foreach ($parsed->lines as $line => $value) {
-            if (is_array($this->lines[$line] ?? null) || ! is_string($value)) {
+            if (! is_string($value)) {
+                $this->warnings[] = "{$this->locale}: {$line} skipped (".get_debug_type($value).')';
+            } elseif (is_array($this->lines[$line] ?? null)) {
                 $this->warnings[] = $this->collisionWarning((string) $line);
-
-                continue;
+            } else {
+                $this->lines[$line] = $value;
             }
-
-            $this->lines[$line] = $value;
         }
     }
 
     /**
-     * Returns the collision warnings gathered by put().
+     * Returns the warnings of every unit put, in put order, with each unit's collisions after its own.
      *
      * @return list<string>
      */
