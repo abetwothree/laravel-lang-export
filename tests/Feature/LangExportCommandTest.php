@@ -110,9 +110,7 @@ it('only removes locale files that exist inside the output directory', function 
         'watch' => [],
     ]));
     $this->artisan('lang:export')->doesntExpectOutputToContain('Removed')->assertSuccessful();
-    $kept = File::exists($outside);
-    File::delete($outside);
-    expect($kept)->toBeTrue();
+    expect(File::exists($outside))->toBeTrue();
 });
 
 it('writes to --output', function () {
@@ -193,7 +191,6 @@ it('fails without writing when a lang file cannot be loaded', function () {
     File::put("$dir/en/broken.php", "<?php return ['a' => ;");
     config()->set('lang-export.paths', [$dir]);
     $this->artisan('lang:export')->expectsOutputToContain('broken.php')->assertFailed();
-    File::deleteDirectory($dir);
     expect(File::exists($this->outputPath().'/en.json'))->toBeFalse()
         ->and(File::files($this->outputPath()))->toBeEmpty();
 });
@@ -204,7 +201,6 @@ it('fails without writing when a line cannot be encoded', function () {
     File::put("$dir/en/bad.php", "<?php return ['bad' => \"\\xB1\\x31\"];");
     config()->set('lang-export.paths', [$dir]);
     $this->artisan('lang:export')->expectsOutputToContain('Could not encode the en locale file')->assertFailed();
-    File::deleteDirectory($dir);
     expect(File::files($this->outputPath()))->toBeEmpty();
 });
 

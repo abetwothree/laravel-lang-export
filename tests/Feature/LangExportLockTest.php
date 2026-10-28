@@ -18,8 +18,6 @@ beforeEach(function () {
 });
 afterEach(function () {
     File::deleteDirectory($this->live);
-    File::deleteDirectory($this->storage);
-    File::delete($this->storage);
 });
 
 // Records, at every read and write inside the output directory, whether a second handle could take the export lock.
