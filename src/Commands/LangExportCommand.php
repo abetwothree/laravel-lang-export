@@ -11,9 +11,6 @@ use AbeTwoThree\LaravelLangExport\LangExporter;
 use AbeTwoThree\LaravelLangExport\Support\BasePath;
 use Illuminate\Console\Command;
 
-use function is_array;
-use function is_string;
-
 /**
  * Exports the app's translations as one JSON file per locale for `@tolki/lang`.
  *

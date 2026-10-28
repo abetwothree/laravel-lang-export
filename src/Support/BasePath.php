@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLangExport\Support;
 
-use function base_path;
-use function preg_match;
-
 /**
  * Resolves user-given paths against the app's base path, so config, flags and `--source` agree from any working dir.
  */

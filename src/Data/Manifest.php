@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLangExport\Data;
 
-use function array_is_list;
-use function is_array;
-use function is_string;
-
 /**
  * The list of exported locales and the paths a watcher should observe, stored beside the locale files.
  */

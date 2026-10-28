@@ -6,23 +6,7 @@ namespace AbeTwoThree\LaravelLangExport\Output;
 
 use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-
-use function is_array;
-use function is_string;
-use function json_decode;
-use function json_encode;
-
-use const JSON_PRETTY_PRINT;
-use const JSON_THROW_ON_ERROR;
-use const JSON_UNESCAPED_SLASHES;
-use const JSON_UNESCAPED_UNICODE;
-
 use JsonException;
-
-use function ksort;
-
-use const SORT_STRING;
-
 use stdClass;
 
 /**

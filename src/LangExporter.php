@@ -17,26 +17,10 @@ use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
-
-use function array_diff;
-use function array_keys;
-use function array_push;
-use function array_unique;
-use function array_values;
-use function basename;
-
 use Closure;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Filesystem\LockableFile;
 use Illuminate\Translation\Translator;
-
-use function in_array;
-use function sort;
-
-use const SORT_STRING;
-
-use function storage_path;
-
 use Throwable;
 
 /**

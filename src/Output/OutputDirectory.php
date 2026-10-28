@@ -6,22 +6,9 @@ namespace AbeTwoThree\LaravelLangExport\Output;
 
 use AbeTwoThree\LaravelLangExport\Data\Manifest;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-
-use function bin2hex;
-
 use ErrorException;
 use Illuminate\Filesystem\Filesystem;
-
-use function json_decode;
-use function json_encode;
-
-use const JSON_THROW_ON_ERROR;
-use const JSON_UNESCAPED_SLASHES;
-use const JSON_UNESCAPED_UNICODE;
-
 use JsonException;
-
-use function random_bytes;
 
 /**
  * The export directory: reads and atomically writes locale files and the manifest, skipping unchanged content.
