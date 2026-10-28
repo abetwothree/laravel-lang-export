@@ -17,6 +17,7 @@ use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
 use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
 use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
+use AbeTwoThree\LaravelLangExport\Support\Path;
 use Closure;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Filesystem\LockableFile;
@@ -90,12 +91,16 @@ final readonly class LangExporter
     }
 
     /**
-     * Snapshots the lang sources, refusing an output path that is one of their directories.
+     * Snapshots the lang sources, refusing an output path that is the base path or one of their directories.
      *
      * @throws LangExportException
      */
     private function sources(ExportOptions $options): LangSources
     {
+        if (Path::normalize($options->outputPath) === Path::normalize(base_path())) {
+            throw LangExportException::outputIsBasePath($options->outputPath);
+        }
+
         $sources = LangSources::fromTranslator($this->translator, $options);
 
         if ($sources->hasDirectory($options->outputPath)) {

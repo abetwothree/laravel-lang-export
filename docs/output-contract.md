@@ -32,7 +32,7 @@ What the `@tolki/lang/vite-laravel` plugin and the frontend Translator rely on. 
 
 `php artisan lang:export` with `--locale=*`, `--only=*`, `--except=*`, `--output=` and `--source=`. Flags override config. A relative `--output`, and relative config `output_path`, `paths`, `json_paths` and `namespaces` values, resolve against `base_path()`.
 
-- An output path that is a registered lang, JSON or namespace directory fails before anything is written.
+- An output path that is the base path, or a registered lang, JSON or namespace directory, fails before anything is written. So does malformed config.
 - `--locale` (or config `locales`) warns `{locale}: no lang files found` for each requested locale without lang files. When none has any, the run fails and writes or deletes nothing. An empty `locales` list means every locale.
 - `--source=` takes one changed file, absolute or relative to `base_path()`. Paths with `..` segments are refused, and only files under registered lang directories load.
 - `--source` falls back to a full export when the manifest is missing, and to a whole-locale export when the locale is unlisted or its file is missing or unreadable, or when the changed unit parses empty. The result matches a full export.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AbeTwoThree\LaravelLangExport\Data;
 
+use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
 use AbeTwoThree\LaravelLangExport\Support\BasePath;
 use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
@@ -43,26 +44,34 @@ final readonly class ExportOptions
      *
      * This is the config boundary; downstream classes trust the result. Relative paths resolve against the base path.
      *
-     * @throws InvalidArgumentException
+     * @throws LangExportException
      */
     public static function fromConfig(): self
     {
         $locales = Config::get('lang-export.locales');
 
-        return new self(
-            outputPath: BasePath::resolve(Config::string('lang-export.output_path')),
-            locales: $locales === null || $locales === [] ? null : self::stringList($locales, 'locales'),
-            only: self::stringList(Config::array('lang-export.only'), 'only'),
-            except: self::stringList(Config::array('lang-export.except'), 'except'),
-            json: Config::boolean('lang-export.json'),
-            paths: array_map(BasePath::resolve(...), self::stringList(Config::array('lang-export.paths'), 'paths')),
-            jsonPaths: array_map(
-                BasePath::resolve(...),
-                self::stringList(Config::array('lang-export.json_paths'), 'json_paths'),
-            ),
-            namespaces: array_map(BasePath::resolve(...), self::namespaceMap(Config::array('lang-export.namespaces'))),
-            prettyPrint: Config::boolean('lang-export.pretty_print'),
-        );
+        // Laravel's typed getters and this class's validators both throw InvalidArgumentException.
+        try {
+            return new self(
+                outputPath: BasePath::resolve(Config::string('lang-export.output_path')),
+                locales: $locales === null || $locales === [] ? null : self::stringList($locales, 'locales'),
+                only: self::stringList(Config::array('lang-export.only'), 'only'),
+                except: self::stringList(Config::array('lang-export.except'), 'except'),
+                json: Config::boolean('lang-export.json'),
+                paths: array_map(BasePath::resolve(...), self::stringList(Config::array('lang-export.paths'), 'paths')),
+                jsonPaths: array_map(
+                    BasePath::resolve(...),
+                    self::stringList(Config::array('lang-export.json_paths'), 'json_paths'),
+                ),
+                namespaces: array_map(
+                    BasePath::resolve(...),
+                    self::namespaceMap(Config::array('lang-export.namespaces')),
+                ),
+                prettyPrint: Config::boolean('lang-export.pretty_print'),
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw LangExportException::invalidConfig($exception);
+        }
     }
 
     /**

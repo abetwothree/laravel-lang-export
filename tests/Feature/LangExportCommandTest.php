@@ -225,3 +225,25 @@ it('publishes the workbench sample output', function () {
         ->and(File::exists(workbench_path('resources/js/lang/manifest.json')))->toBeTrue()
         ->and(File::get(workbench_path('resources/js/lang/es.json')))->toStartWith("{\n    \"Welcome\"");
 });
+
+it('prints malformed config as an error', function () {
+    config()->set('lang-export.locales', 'en');
+    $this->artisan('lang:export')
+        ->expectsOutputToContain('Config lang-export.locales must be a list of strings.')->assertFailed();
+});
+
+it('refuses an output path that is the base path', function (array $config, array $flags) {
+    config()->set($config);
+
+    try {
+        $this->artisan('lang:export', $flags)->expectsOutputToContain('is the base path.')->assertFailed();
+        expect(File::exists(base_path('manifest.json')))->toBeFalse();
+    } finally {
+        // The red run writes into the Testbench skeleton; leave it clean.
+        File::delete(array_map(base_path(...), ['de.json', 'en.json', 'es.json', 'manifest.json']));
+    }
+})->with([
+    'empty config' => [['lang-export.output_path' => ''], []],
+    'dot config' => [['lang-export.output_path' => '.'], []],
+    'dot flag' => [[], ['--output' => '.']],
+]);

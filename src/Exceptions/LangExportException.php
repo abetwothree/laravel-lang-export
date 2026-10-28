@@ -7,6 +7,7 @@ namespace AbeTwoThree\LaravelLangExport\Exceptions;
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
 use Illuminate\Translation\FileLoader;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
@@ -23,6 +24,22 @@ class LangExportException extends RuntimeException
     public static function unsupportedLoader(string $class): self
     {
         return new self(sprintf('The translation loader [%s] must extend %s.', $class, FileLoader::class));
+    }
+
+    /**
+     * Reports a malformed `lang-export` config value, keeping the validator's message.
+     */
+    public static function invalidConfig(InvalidArgumentException $previous): self
+    {
+        return new self($previous->getMessage(), previous: $previous);
+    }
+
+    /**
+     * Reports an output path that is the base path, where the export would write into the project root.
+     */
+    public static function outputIsBasePath(string $path): self
+    {
+        return new self(sprintf('The output path [%s] is the base path.', $path));
     }
 
     /**
