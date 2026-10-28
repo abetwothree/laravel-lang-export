@@ -18,6 +18,7 @@ This repo is single-context:
 /
 ├── GLOSSARY.md
 ├── docs/decisions/
+│   ├── 2026-10-27-export-without-lock-when-unsupported.md
 │   └── 2026-10-27-load-through-laravel-loader.md
 └── src/
 ```

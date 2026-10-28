@@ -24,3 +24,5 @@
 Value objects: [`TranslationUnit`](../../src/Data/TranslationUnit.php), [`ParsedUnit`](../../src/Data/ParsedUnit.php), [`ExportResult`](../../src/Data/ExportResult.php), [`SkipReason`](../../src/Data/SkipReason.php).
 
 Why it loads through `FileLoader`: [ADR](../decisions/2026-10-27-load-through-laravel-loader.md).
+
+Why a run exports unlocked where the filesystem cannot lock: [ADR](../decisions/2026-10-27-export-without-lock-when-unsupported.md).
