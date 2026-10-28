@@ -39,14 +39,6 @@ final readonly class OutputDirectory
     }
 
     /**
-     * Writes a locale's document; returns false when the file already holds the same bytes.
-     */
-    public function write(LocaleDocument $document, bool $pretty): bool
-    {
-        return $this->writeJson($document->locale, $document->toJson($pretty));
-    }
-
-    /**
      * Writes a locale's already encoded JSON; returns false when the file already holds the same bytes.
      */
     public function writeJson(string $locale, string $json): bool
