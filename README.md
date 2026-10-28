@@ -1,4 +1,4 @@
-# Export your Laravel translations as JSON for Vue, React & Svelte
+# Export your Laravel translations as JSON for Vue, React, Svelte or any other JS framework
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/abetwothree/laravel-lang-export.svg?style=flat-square)](https://packagist.org/packages/abetwothree/laravel-lang-export)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/abetwothree/laravel-lang/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/abetwothree/laravel-lang/actions?query=workflow%3Arun-tests+branch%3Amain)
