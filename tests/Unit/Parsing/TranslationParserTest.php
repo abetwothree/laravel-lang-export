@@ -109,7 +109,8 @@ it('keeps the load error when an earlier file of the unit returns an array', fun
     try {
         $parse(new TranslationUnit('en', '*', 'auth'));
     } catch (LangExportException $e) {
-        expect(normalizePath($e->getMessage()))->toContain(normalizePath("$dir/en/auth.php").':')
+        // Only the suffix: on Windows the temp dir can be an 8.3 short path while PHP reports the long one.
+        expect(normalizePath($e->getMessage()))->toContain('/override/en/auth.php:')
             ->not->toContain('must return an array');
 
         return;
