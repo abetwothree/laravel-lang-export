@@ -45,7 +45,7 @@ What the `@tolki/lang/vite-laravel` plugin and the frontend Translator rely on. 
 
 ## Caller obligations
 
-- Serialize or debounce `--source` calls. The command's lock queues concurrent runs, but each one still runs.
+- Serialize or debounce `--source` calls. The command's lock queues concurrent runs, but each one still runs, a run that waits over 30 seconds fails, and a filesystem without locking queues nothing.
 - Pass `--source` the same `--locale`, `--only` and `--except` as the full export. A mismatch changes the fingerprint, so the run becomes a full export with the new options, which can remove locale files.
 - Prefer `--source` paths relative to the base path. Absolute paths compare as normalized strings, so a host path never matches one inside a Sail container.
 - Expect `Skipped {source}: not a translation file` (exit `0`) for other files in watched directories. A path outside every registered directory, or with a `..` segment, exits `1`.
