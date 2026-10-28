@@ -110,6 +110,8 @@ it('collapses . and .. lexically', function (string $path, string $canonical) us
     ['C:/../y', 'C:/y'],
     ['//server/share/../z', '//server/z'],
     ['rel/../../w', '../w'],
+    ['c:\\x\\y\\', 'C:/x/y'],
+    ['c:/x//y', 'C:/x/y'],
 ]);
 
 it('rejects a loader that does not extend FileLoader', function () use ($sources) {

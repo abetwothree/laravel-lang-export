@@ -6,6 +6,7 @@ namespace AbeTwoThree\LaravelLangExport\Discovery;
 
 use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
 use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LaravelLangExport\Support\Path;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
 
@@ -47,13 +48,13 @@ final readonly class LangSources
         }
 
         foreach ($options->paths as $path) {
-            if (! in_array(self::normalize($path), self::normalizeList($loader->paths()), true)) {
+            if (! in_array(Path::normalize($path), self::normalizeList($loader->paths()), true)) {
                 $loader->addPath($path);
             }
         }
 
         foreach ($options->jsonPaths as $path) {
-            if (! in_array(self::normalize($path), self::normalizeList($loader->jsonPaths()), true)) {
+            if (! in_array(Path::normalize($path), self::normalizeList($loader->jsonPaths()), true)) {
                 $loader->addJsonPath($path);
             }
         }
@@ -69,7 +70,7 @@ final readonly class LangSources
             loader: $loader,
             groupPaths: self::normalizeList($loader->paths()),
             jsonPaths: self::normalizeList($loader->jsonPaths()),
-            namespaces: array_map(self::normalize(...), $loader->namespaces()),
+            namespaces: array_map(Path::normalize(...), $loader->namespaces()),
         );
     }
 
@@ -126,7 +127,7 @@ final readonly class LangSources
      */
     public function hasDirectory(string $path): bool
     {
-        return in_array(self::normalize($path), $this->directories(), true);
+        return in_array(Path::normalize($path), $this->directories(), true);
     }
 
     /**
@@ -138,7 +139,7 @@ final readonly class LangSources
      */
     public function watchDirectories(): array
     {
-        $base = self::normalize(base_path()).'/';
+        $base = Path::normalize(base_path()).'/';
         $directories = [];
 
         foreach ($this->directories() as $path) {
@@ -154,32 +155,6 @@ final readonly class LangSources
     }
 
     /**
-     * Converts a path to forward slashes with `.` and `..` collapsed and no trailing slash.
-     *
-     * Packages register `__DIR__.'/../lang'`. Collapsing lexically, unlike realpath(), still maps deleted files.
-     */
-    private static function normalize(string $path): string
-    {
-        $path = str_replace('\\', '/', $path);
-        $root = preg_match('#^(?:[A-Za-z]:)?/*#', $path, $match) === 1 ? $match[0] : '';
-        $segments = [];
-
-        foreach (explode('/', substr($path, strlen($root))) as $segment) {
-            if ($segment === '' || $segment === '.') {
-                continue;
-            }
-
-            if ($segment !== '..' || ($segments === [] && $root === '') || end($segments) === '..') {
-                $segments[] = $segment;
-            } elseif ($segments !== []) {
-                array_pop($segments);
-            }
-        }
-
-        return rtrim($root.implode('/', $segments), '/');
-    }
-
-    /**
      * Normalizes the string entries of a loader path list.
      *
      * @param  array<array-key, mixed>  $paths
@@ -191,7 +166,7 @@ final readonly class LangSources
 
         foreach ($paths as $path) {
             if (is_string($path)) {
-                $normalized[] = self::normalize($path);
+                $normalized[] = Path::normalize($path);
             }
         }
 

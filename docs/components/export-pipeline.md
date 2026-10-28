@@ -15,6 +15,7 @@
 | [`OutputDirectory`](../../src/Output/OutputDirectory.php) | Atomic, change-aware reads and writes of locale files and the manifest. |
 | [`Manifest`](../../src/Data/Manifest.php) | Locale list and watch directories. |
 | [`BasePath`](../../src/Support/BasePath.php) | Resolves relative config, `--output` and `--source` paths against `base_path()`. |
+| [`Path`](../../src/Support/Path.php) | Normalizes slashes, `.`, `..` and drive-letter case so lang directories and `--source` paths compare equal. |
 | [`LangExportException`](../../src/Exceptions/LangExportException.php) | Every expected failure. |
 
 Value objects: [`TranslationUnit`](../../src/Data/TranslationUnit.php), [`ParsedUnit`](../../src/Data/ParsedUnit.php), [`ExportResult`](../../src/Data/ExportResult.php), [`SkipReason`](../../src/Data/SkipReason.php).
