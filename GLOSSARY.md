@@ -1,4 +1,4 @@
-# laravel-lang-export
+# lang-export
 
 A Laravel package that exports an application's translations as one JSON file per locale for the `@tolki/lang` frontend Translator.
 

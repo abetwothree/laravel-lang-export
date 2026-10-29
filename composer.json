@@ -1,10 +1,10 @@
 {
-    "name": "abetwothree/laravel-lang-export",
+    "name": "abetwothree/lang-export",
     "description": "Export your Laravel translation files as JSON for Vue, React, & Svelte with @tolki/lang",
     "keywords": [
         "abetwothree",
         "laravel",
-        "laravel-lang-export",
+        "lang-export",
         "translations",
         "i18n",
         "tolki"

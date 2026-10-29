@@ -12,7 +12,7 @@ use Throwable;
  */
 final class PackageVersion
 {
-    public const string PACKAGE = 'abetwothree/laravel-lang-export';
+    public const string PACKAGE = 'abetwothree/lang-export';
 
     /**
      * Returns the installed version, else its commit reference, else `dev`.
