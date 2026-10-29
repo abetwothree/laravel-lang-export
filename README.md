@@ -15,6 +15,9 @@ It is the Laravel side of [`@tolki/lang`](https://github.com/abetwothree/tolki/t
 
 ```bash
 composer require abetwothree/lang-export
+```
+
+```bash
 npm install @tolki/lang
 ```
 
