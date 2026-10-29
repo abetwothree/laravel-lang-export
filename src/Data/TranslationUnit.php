@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Data;
+namespace AbeTwoThree\LangExport\Data;
 
 /**
  * One exportable block of translations: a locale's JSON lines, or one group of an app or package namespace.

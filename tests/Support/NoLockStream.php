@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Tests\Support;
+namespace AbeTwoThree\LangExport\Tests\Support;
 
 /**
  * A `nolock://` stream wrapper standing in for a filesystem without file locking: every path is a directory, every

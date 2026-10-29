@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Data;
+namespace AbeTwoThree\LangExport\Data;
 
 /**
  * What an export wrote, left unchanged and removed, each listed by locale code, plus its warning messages.

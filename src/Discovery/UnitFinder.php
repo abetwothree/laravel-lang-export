@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Discovery;
+namespace AbeTwoThree\LangExport\Discovery;
 
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Support\BasePath;
-use AbeTwoThree\LaravelLangExport\Support\Path;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Support\BasePath;
+use AbeTwoThree\LangExport\Support\Path;
 use Illuminate\Filesystem\Filesystem;
 
 /**

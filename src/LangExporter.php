@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport;
+namespace AbeTwoThree\LangExport;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\ExportResult;
-use AbeTwoThree\LaravelLangExport\Data\Manifest;
-use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
-use AbeTwoThree\LaravelLangExport\Data\SkipReason;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
-use AbeTwoThree\LaravelLangExport\Discovery\UnitFilter;
-use AbeTwoThree\LaravelLangExport\Discovery\UnitFinder;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
-use AbeTwoThree\LaravelLangExport\Output\OutputDirectory;
-use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
-use AbeTwoThree\LaravelLangExport\Support\ExportFingerprint;
-use AbeTwoThree\LaravelLangExport\Support\ExportLock;
-use AbeTwoThree\LaravelLangExport\Support\PackageVersion;
-use AbeTwoThree\LaravelLangExport\Support\Path;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\ExportResult;
+use AbeTwoThree\LangExport\Data\Manifest;
+use AbeTwoThree\LangExport\Data\ParsedUnit;
+use AbeTwoThree\LangExport\Data\SkipReason;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Discovery\UnitFilter;
+use AbeTwoThree\LangExport\Discovery\UnitFinder;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Output\LocaleDocument;
+use AbeTwoThree\LangExport\Output\OutputDirectory;
+use AbeTwoThree\LangExport\Parsing\TranslationParser;
+use AbeTwoThree\LangExport\Support\ExportFingerprint;
+use AbeTwoThree\LangExport\Support\ExportLock;
+use AbeTwoThree\LangExport\Support\PackageVersion;
+use AbeTwoThree\LangExport\Support\Path;
 use Closure;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Translation\Translator;

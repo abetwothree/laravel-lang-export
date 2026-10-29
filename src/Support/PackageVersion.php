@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Support;
+namespace AbeTwoThree\LangExport\Support;
 
 use Composer\InstalledVersions;
 use Throwable;

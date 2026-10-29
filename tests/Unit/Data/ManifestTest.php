@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\Manifest;
+use AbeTwoThree\LangExport\Data\Manifest;
 
 it('round trips through its stored shape', function () {
     $manifest = new Manifest(['en'], ['lang'], 'abc');

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Discovery;
+namespace AbeTwoThree\LangExport\Discovery;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
 use Illuminate\Support\Str;
 
 /**

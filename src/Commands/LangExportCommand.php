@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Commands;
+namespace AbeTwoThree\LangExport\Commands;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\ExportResult;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\LangExporter;
-use AbeTwoThree\LaravelLangExport\Support\BasePath;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\ExportResult;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\LangExporter;
+use AbeTwoThree\LangExport\Support\BasePath;
 use Illuminate\Console\Command;
 
 /**

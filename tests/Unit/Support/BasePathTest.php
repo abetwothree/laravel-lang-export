@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Support\BasePath;
+use AbeTwoThree\LangExport\Support\BasePath;
 
 it('joins a relative path to the base path', function (string $path) {
     expect(BasePath::resolve($path))->toBe(base_path($path));

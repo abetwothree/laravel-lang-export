@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Tests;
+namespace AbeTwoThree\LangExport\Tests;
 
-use AbeTwoThree\LaravelLangExport\LaravelLangExportServiceProvider;
+use AbeTwoThree\LangExport\LangExportServiceProvider;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Str;
@@ -69,7 +69,7 @@ class TestCase extends Orchestra
     {
         return [
             ...parent::getPackageProviders($app),
-            LaravelLangExportServiceProvider::class,
+            LangExportServiceProvider::class,
         ];
     }
 }

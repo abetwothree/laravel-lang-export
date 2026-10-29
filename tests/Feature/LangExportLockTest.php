@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\LangExporter;
-use AbeTwoThree\LaravelLangExport\Tests\Support\NoLockStream;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\LangExporter;
+use AbeTwoThree\LangExport\Tests\Support\NoLockStream;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;

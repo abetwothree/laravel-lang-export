@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Output;
+namespace AbeTwoThree\LangExport\Output;
 
-use AbeTwoThree\LaravelLangExport\Data\Manifest;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Data\Manifest;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
 use ErrorException;
 use Illuminate\Filesystem\Filesystem;
 use JsonException;

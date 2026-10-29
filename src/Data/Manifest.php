@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Data;
+namespace AbeTwoThree\LangExport\Data;
 
 /**
  * The exported locales, the paths a watcher should observe and the fingerprint of what shaped them, stored beside

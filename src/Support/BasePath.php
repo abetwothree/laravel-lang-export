@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Support;
+namespace AbeTwoThree\LangExport\Support;
 
 /**
  * Resolves user-given paths against the app's base path, so config, flags and `--source` agree from any working dir.

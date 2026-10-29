@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Output\LocaleDocument;
+use AbeTwoThree\LangExport\Data\ParsedUnit;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Output\LocaleDocument;
 
 $group = fn (string $key, array $lines, string $locale = 'en') => new ParsedUnit(
     str_contains($key, '::') ? new TranslationUnit($locale, ...explode('::', $key)) : new TranslationUnit($locale, '*', $key),

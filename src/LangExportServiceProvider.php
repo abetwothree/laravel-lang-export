@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport;
+namespace AbeTwoThree\LangExport;
 
-use AbeTwoThree\LaravelLangExport\Commands\LangExportCommand;
+use AbeTwoThree\LangExport\Commands\LangExportCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class LaravelLangExportServiceProvider extends PackageServiceProvider
+class LangExportServiceProvider extends PackageServiceProvider
 {
     /**
      * Registers the package name, its config file and the export command.
@@ -16,7 +16,7 @@ class LaravelLangExportServiceProvider extends PackageServiceProvider
     public function configurePackage(Package $package): void
     {
         $package
-            ->name('laravel-lang-export')
+            ->name('lang-export')
             ->hasConfigFile('lang-export')
             ->hasCommand(LangExportCommand::class);
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Tests\TestCase;
+use AbeTwoThree\LangExport\Tests\TestCase;
 
 uses(TestCase::class)->in(__DIR__);
 

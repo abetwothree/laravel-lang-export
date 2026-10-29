@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Parsing\TranslationParser;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Parsing\TranslationParser;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 

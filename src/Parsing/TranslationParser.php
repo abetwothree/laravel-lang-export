@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Parsing;
+namespace AbeTwoThree\LangExport\Parsing;
 
-use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Data\ParsedUnit;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
 use Illuminate\Filesystem\Filesystem;
 use Throwable;
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Support\ExportLock;
-use AbeTwoThree\LaravelLangExport\Tests\Support\NoLockStream;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Support\ExportLock;
+use AbeTwoThree\LangExport\Tests\Support\NoLockStream;
 
 it('holds an exclusive lock until released', function () {
     $path = $this->outputPath().'/test.lock';

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Discovery\UnitFilter;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Discovery\UnitFilter;
 
 $filterWith = fn (array $locales = [], array $only = [], array $except = []): UnitFilter => new UnitFilter(ExportOptions::fromConfig()->with(locales: $locales, only: $only, except: $except));
 

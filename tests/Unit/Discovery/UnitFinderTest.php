@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
-use AbeTwoThree\LaravelLangExport\Discovery\UnitFinder;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Discovery\UnitFinder;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File;
 

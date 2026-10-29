@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Discovery;
+namespace AbeTwoThree\LangExport\Discovery;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Support\Path;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Support\Path;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
 

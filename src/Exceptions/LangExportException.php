@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Exceptions;
+namespace AbeTwoThree\LangExport\Exceptions;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
 use Illuminate\Translation\FileLoader;
 use InvalidArgumentException;
 use RuntimeException;

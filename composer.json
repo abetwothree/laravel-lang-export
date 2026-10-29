@@ -38,12 +38,12 @@
     },
     "autoload": {
         "psr-4": {
-            "AbeTwoThree\\LaravelLangExport\\": "src/"
+            "AbeTwoThree\\LangExport\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "AbeTwoThree\\LaravelLangExport\\Tests\\": "tests/",
+            "AbeTwoThree\\LangExport\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -80,7 +80,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "AbeTwoThree\\LaravelLangExport\\LaravelLangExportServiceProvider"
+                "AbeTwoThree\\LangExport\\LangExportServiceProvider"
             ]
         }
     },

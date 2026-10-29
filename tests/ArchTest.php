@@ -7,5 +7,5 @@ arch('it will not use debugging functions')
     ->each->not->toBeUsed();
 
 arch('it declares strict types')
-    ->expect('AbeTwoThree\LaravelLangExport')
+    ->expect('AbeTwoThree\LangExport')
     ->toUseStrictTypes();

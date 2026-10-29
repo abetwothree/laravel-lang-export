@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Data;
+namespace AbeTwoThree\LangExport\Data;
 
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
-use AbeTwoThree\LaravelLangExport\Support\BasePath;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Support\BasePath;
 use Illuminate\Support\Facades\Config;
 use InvalidArgumentException;
 

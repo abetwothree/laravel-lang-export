@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
 
 it('reads every option from config', function () {
     config()->set('lang-export.locales', ['en']);

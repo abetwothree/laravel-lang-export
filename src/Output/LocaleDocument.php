@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Output;
+namespace AbeTwoThree\LangExport\Output;
 
-use AbeTwoThree\LaravelLangExport\Data\ParsedUnit;
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Data\ParsedUnit;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
 use JsonException;
 use stdClass;
 

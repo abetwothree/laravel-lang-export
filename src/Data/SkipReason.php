@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Data;
+namespace AbeTwoThree\LangExport\Data;
 
 /**
  * Why a source re-export wrote nothing; the value ends the command's `Skipped {source}: …` line.

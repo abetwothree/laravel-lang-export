@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Support;
+namespace AbeTwoThree\LangExport\Support;
 
-use AbeTwoThree\LaravelLangExport\Exceptions\LangExportException;
+use AbeTwoThree\LangExport\Exceptions\LangExportException;
 use ErrorException;
 
 /**

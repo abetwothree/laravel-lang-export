@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace AbeTwoThree\LaravelLangExport\Support;
+namespace AbeTwoThree\LangExport\Support;
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Discovery\LangSources;
 
 /**
  * Hashes what shapes an export besides the lang files themselves, so a `--source` patch can tell the last export

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\ExportOptions;
-use AbeTwoThree\LaravelLangExport\Discovery\LangSources;
-use AbeTwoThree\LaravelLangExport\Support\ExportFingerprint;
-use AbeTwoThree\LaravelLangExport\Support\PackageVersion;
+use AbeTwoThree\LangExport\Data\ExportOptions;
+use AbeTwoThree\LangExport\Discovery\LangSources;
+use AbeTwoThree\LangExport\Support\ExportFingerprint;
+use AbeTwoThree\LangExport\Support\PackageVersion;
 use Composer\InstalledVersions;
 
 use function Orchestra\Testbench\workbench_path;

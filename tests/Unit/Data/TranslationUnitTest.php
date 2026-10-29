@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AbeTwoThree\LaravelLangExport\Data\TranslationUnit;
+use AbeTwoThree\LangExport\Data\TranslationUnit;
 
 it('keys an app group by its name', function () {
     expect((new TranslationUnit('en', '*', 'admin/users'))->key())->toBe('admin/users');
